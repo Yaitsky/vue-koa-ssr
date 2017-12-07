@@ -1,37 +1,37 @@
-title: 全栈开发实战：用Vue2+Koa1开发完整的前后端项目（更新Koa2）
+title: Full stack development Real combat: Develop complete front-end and back-end projects with Vue2 + Koa1 (Update Koa2)
 tags: 
-  - 前端
+  - front end
   - Nodejs
 categories:
   - Web
-  - 开发
+  - Development
   - Nodejs
 date: 2017-05-03 14:09:00
 ---
 
-## 简介
+## Introduction
 
-本文从一名新手的角度（默认对Vue有了解，对Koa或者Express有了解）出发，从0开始构建一个数据通过Koa提供API的形式获取，页面通过Vue渲染的完整的前端项目。可以了解到Vue构建单页面的一些知识以及前端路由的使用、Koa如何提供API接口，如何进行访问过滤（路由）、验证（JSON-WEB-TOKEN）以及Sequelize操作MySQL数据库的一些知识和技巧，希望能够作为一篇入门全栈开发的文章吧。
+Starting from a novice point of view (acquainted with Vue by default, with Koa or Express), starting with 0, build a complete front-end project where the data is available via the Koa API and the page is rendered via Vue. Learn some of the knowledge of Vue to build a single page and the use of front-end routing, how Koa provides the API interface, how to perform access filtering (routing), authentication (JSON-WEB-TOKEN) and Sequelize MySQL database operation some knowledge and skills Can be used as an entry-level development of the article stack it.
 
-**更新**：文末给出的github仓库已经更新Koa2版本。请使用Node.js v7.6.0及以上版本体验~
+** UPDATING **: The github repository given at the end of the article has been updated with the Koa2 version. Please use Node.js v7.6.0 and above to experience ~
 
 <!-- more -->
 
-## 写在前面
+## Write in front
 
-我曾经写过一篇[文章](https://molunerfinn.com/nodejs-2/)，是用express和mongodb入门Nodejs的前后端开发，这篇文章里简单的做了一个小demo，能够让你读写mongodb数据库，并且从数据库里将数据读取出来显示到页面上。算是一个简单的读写小demo吧，也算是服务端渲染的一次初尝试。并且我还写过用nodejs写简单小爬虫的[文章](https://molunerfinn.com/nodejs-1/)，用爬虫来获取数据写入数据库。通过以上的的方法我用express写了一个小网站，记录并显示北邮人论坛每天的十大的[内容](http://topten.piegg.cn)。挺好玩的对吧，可以把想要做的事用代码来实现。
+I wrote an article (https://molunerfinn.com/nodejs-2/), which was developed using both express and mongodb front and back ends of Nodejs. In this article, I simply created a demo that allows You read and write mongodb database, and read out the data from the database displayed on the page. Be regarded as a simple read and write demo, it can be considered a server-side rendering of the first attempt. And I also wrote [article] (https://molunerfinn.com/nodejs-1/) that wrote a simple little spider with nodejs, using a crawler to get the data written to the database. Through the above method I use express to write a small website, record and display the Beijing University of Posts and forums every day the top ten [content] (http://topten.piegg.cn). Very fun right, you can use the code to achieve what you want to do.
 
-后来我接触到了Koa，并开始了学习，从express迁移到Koa其实曲线还算是比较平滑的。不过用Koa的方式也还是采用服务端渲染页面的方式。而且我发现目前网络上少有写过用Koa构建的前后端分离的应用、网站文章，我最近做的一个项目里需要用到的方式就是用Vue构建页面，数据的获取全部走后端API的形式，也就是所谓的前后端分离吧。正好在这过程中走了不少的坑，包括数据库的使用上也算是个新手，所以写篇文章记录一下，用同样的思路和方法构建一个简单的Todolist，欢迎讨论，轻拍~
+Later I came into contact with Koa and began to learn. Moving from Express to Koa is actually a smoother curve. However, the way with Koa also use the server-side rendering of the page. And I found that there are few applications on the web that have been written before and after the Koa build for both front-end and back-end applications. One of my recent projects that I need to do is to build the page with Vue. The data gets back to the backend API Form, that is, the so-called front and rear separation. Just go in this process a lot of pit, including the use of the database can be considered a novice, so write articles to record, with the same ideas and methods to build a simple Todolist, welcome to discuss, tap ~
 
-## 项目架构
+## Project architecture
 
 ```
 .
 ├── LICENSE
 ├── README.md
-├── .env  // 环境变量配置文件
-├── app.js  // Koa入口文件
-├── build // vue-cli 生成，用于webpack监听、构建
+├── .env  // Environment Variables Profile
+├── app.js  // Koa entry file
+├── build // vue-cli Generated for webpack monitoring, build
 │   ├── build.js
 │   ├── check-versions.js
 │   ├── dev-client.js
@@ -40,85 +40,85 @@ date: 2017-05-03 14:09:00
 │   ├── webpack.base.conf.js
 │   ├── webpack.dev.conf.js
 │   └── webpack.prod.conf.js
-├── config // vue-cli 生成&自己加的一些配置文件
+├── config // vue-cli Generate & add some of their own profile
 │   ├── default.conf
 │   ├── dev.env.js
 │   ├── index.js
 │   └── prod.env.js
-├── dist // Vue build 后的文件夹
-│   ├── index.html // 入口文件
-│   └── static // 静态资源
-├── index.html // vue-cli生成，用于容纳Vue组件的主html文件。单页应用就只有一个html
-├── package.json // npm的依赖、项目信息文件
-├── server // Koa后端，用于提供Api
-│   ├── config // 配置文件夹
-│   ├── controllers // controller-控制器
-│   ├── models // model-模型
-│   ├── routes // route-路由
-│   └── schema // schema-数据库表结构
-├── src // vue-cli 生成&自己添加的utils工具类
-│   ├── App.vue // 主文件
-│   ├── assets // 相关静态资源存放
-│   ├── components // 单文件组件
-│   ├── main.js // 引入Vue等资源、挂载Vue的入口js
-│   └── utils // 工具文件夹-封装的可复用的方法、功能
-└── yarn.lock // 用yarn自动生成的lock文件
+├── dist // Vue build After the folder
+│   ├── index.html // Entrance documents
+│   └── static // Static resources
+├── index.html // vue-cli Generated to host the main HTML file for the Vue component. One page application only one html
+├── package.json //npm dependencies, project information files
+├── server // Koa backend for providing APIs
+│   ├── config // Configuration folder
+│   ├── controllers // controller-controller
+│   ├── models // model-model
+│   ├── routes // route-route
+│   └── schema // schema - database table structure
+├── src // vue-cli Generate & add utils utility class
+│   ├── App.vue // Main document
+│   ├── assets // Related static resource storage
+│   ├── components // Single file components
+│   ├── main.js //The introduction of Vue and other resources, mount Vue entrance js
+│   └── utils // Tool Folder - Encapsulation of reusable methods, features
+└── yarn.lock // Automatically generated lock file with yarn
 ```
 
-看起来好像很复杂的样子，其实很大一部分文件夹的结构是`vue-cli`这个工具帮我们生成的。而我们需要额外添加的主要是Koa的入口文件以及一个`server`文件夹用于Koa提供API。这样的话，在获取数据的方面就可以走Koa所提供的API，而Vue只需关心怎么把这些数据渲染到页面上就好了。
+Looks like a very complex look, in fact, a large part of the folder structure is `vue-cli` this tool to help us generate. And what we need to add is mainly Koa's import file and a `server` folder for Koa's API. In this case, Koa can take the API to provide data, and Vue only needs to be concerned about how to render the data to the page.
 
-## 项目用到的一些关键依赖
+## Some of the key dependencies the project uses
 
-以下依赖的版本都是本文所写的时候的版本，或者更旧一些
+The following dependencies are versions of this article, or older
 
 - Vue.js(v2.1.8)
 - Vue-Router(v2.1.1)
 - Axios(v0.15.3)
 - Element(v1.1.2)
-- Koa.js(v1.2.4) // 没采用Koa2
-- Koa-Router@5.4\Koa-jwt\Koa-static等一系列Koa中间件
-- Mysql(v2.12.0) // nodejs的mysql驱动，并不是mysql本身版本（项目采用mysql5.6）
-- Sequelize(v3.28.0) // 操作数据库的ORM
-- Yarn(v0.18.1) // 比起npm更快一些
+- Koa.js(v1.2.4)
+- Koa-Router@5.4\Koa-jwt\Koa-static  // A series of Koa middleware
+- Mysql(v2.12.0) // nodejs mysql driver, mysql version is not (project using mysql5.6)
+- Sequelize(v3.28.0) // ORM to operate the database
+- Yarn(v0.18.1) // Faster than npm
 
-剩下依赖可以参考本文最后给出的项目demo仓库。
+Remaining dependencies can refer to the project demo repository given at the end of this article.
 
-## 项目启动
+## Project begining
 
-Nodejs与npm的安装不再叙述（希望大家装上的node版本大于等于6.x，不然还需要加上--harmony标志才可以开启es6），默认读者已经掌握npm安装依赖的方法。首先全局安装`npm i vue-cli -g`，当然本项目基本上是采用`yarn`，所以也可以`yarn global add vue-cli`。
+Nodejs and npm installation is no longer described (hope you install the node version greater than or equal to 6.x, or else you need to add --harmony logo can be opened es6), the default reader has mastered npm installation dependencies. First global installation `npm i vue-cli-g`, of course, this project is basically used` yarn`, so it can also `yarn global add vue-cli`.
 
-> Tips: 可以给yarn换上淘宝源，速度更快: `yarn config set registry "https://registry.npm.taobao.org"`
+> Tips: You can change yarn to Taobao source, faster: `yarn config set registry 'https://registry.npm.taobao.org` `
 
-然后我们初始化一个`Vue2的webpack`的模板：
+Then we initialize a `Vue2 webpack` template:
 
 `vue init webpack demo`
 
-> Tips: 上面的demo可以填写你自己的项目名称
+> Tips: The above demo can fill in your own project name
 
-然后进行一些基本配置选择之后，你就可以得到一个基本的`vue-cli`生成的项目结构。
+Then after making a few basic configuration selections, you get a basic project structure generated by `vue-cli`.
 
-接着我们进入`vue-cli`生成的目录，安装`Vue`的项目依赖并安装`Koa`的项目依赖：`yarn && yarn add koa koa-router@5.4 koa-logger koa-json koa-bodyparser`，（注意是安装`koa-router`的5.4版，因为7.X版本是支持Koa2的）然后进行一些基本目录建立：
+Then we go into the `vue-cli` build directory and install the` Vue` project. Dependencies and the `Koa` project dependencies are` yarn && yarn add koa koa-router@5.4 koa-logger koa-json koa-bodyparser`, (Note that version 5.4 of `koa-router` is installed as version 7.X supports Koa2) and then make some basic directory creation:
 
-在`vue-cli`生成的`demo`目录下，建立`server`文件夹以及子文件夹：
+In the `demo` directory generated by` vue-cli`, create the `server` folder and subfolders:
 
 ```
-├── server // Koa后端，用于提供Api
-    ├── config // 配置文件夹
-    ├── controllers // controller-控制器
-    ├── models // model-模型
-    ├── routes // route-路由
-    └── schema // schema-数据库表结构
+├── server // Koa backend for providing APIs
+    ├── config // Configuration folder
+    ├── controllers // controller-controller
+    ├── models // model
+    ├── routes // route
+    └── schema // schema
 ```
 
-然后在`demo`文件夹下我们创建一个`app.js`的文件，作为`Koa`的启动文件。
+Then in the `demo` folder we create a` app.js` file as a `Koa` startup file.
 
-写入如下基本的内容就可以启动`Koa`啦：
+Koa` can be started by writing the following basic contents:
 
 ```javascript
 const app = require('koa')()
   , koa = require('koa-router')()
   , json = require('koa-json')
-  , logger = require('koa-logger'); // 引入各种依赖
+  , logger = require('koa-logger'); // Introduce various dependencies
 
 app.use(require('koa-bodyparser')());
 app.use(json());
@@ -128,7 +128,7 @@ app.use(function* (next){
   let start = new Date;
   yield next;
   let ms = new Date - start;
-  console.log('%s %s - %s', this.method, this.url, ms); // 显示执行的时间
+  console.log('%s %s - %s', this.method, this.url, ms); // Shows the execution time
 });
 
 app.on('error', function(err, ctx){
@@ -142,29 +142,29 @@ app.listen(8889,() => {
 module.exports = app;
 ```
 
-然后在控制台输入`node app.js`，能看到输出`Koa is listening in 8889`，则说明我们的`Koa`已经启动成功了，并在8889端口监听。
+Then type `node app.js` on the console and see the output` Koa is listening in 8889`, then our `Koa` has been started successfully and is listening on port 8889.
 
-## 前端页面构建
+## front page build
 
-这个DEMO是做一个Todo-List，我们首先来做一个登录页面。
+This DEMO is a Todo-List, let's first make a login page.
 
-> Tips: 为了方便构建页面和美观，本文采用的Vue2的前端UI框架是`element-ui`。安装：`yarn add element-ui`
+Tips: In order to facilitate the construction of the page and beautiful, this article uses Vue2 front UI framework is the element-ui. Install: `yarn add element-ui`
 
-模板引擎我习惯用`pug`，CSS预处理我习惯用`stylus`，当然每个人自己的习惯和喜好是不一样的，所以大家根据自己平时的喜好来就行了。
+Template engine I used to use `pug` CSS pretreatment I used to use` stylus`, of course, everyone's own habits and preferences are not the same, so everyone according to their usual preferences on the line.
 
-为了方便大家查看代码，就不用`pug`了，学习成本相对高一些。不过CSS用`stylus`写起来简便，看起来也不会难懂，是我自己的习惯，所以还需要安装一下`yarn add stylus stylus-loader`。
+In order to facilitate everyone to see the code, you do not have `pug`, and learning costs are relatively high. But CSS stylus write simple, it does not seem difficult to understand, is my own custom, so also need to install `yarn add stylus stylus-loader`.
 
-> Tips: 安装stylus-loader是为了让webpack能够渲染stylus
+> Tips: Install stylus-loader is to enable webpack to render stylus
 
-然后要把`element-ui`引入项目中。打开`src/main.js`，将文件改写如下：
+Then we need to introduce `element-ui` into the project. Open `src / main.js`, rewrite the file as follows:
 
 ```js
 import Vue from 'vue'
 import App from './App'
-import ElementUI from 'element-ui' // 引入element-ui
+import ElementUI from 'element-ui' // Introducing element-ui
 import 'element-ui/lib/theme-default/index.css'
 
-Vue.use(ElementUI) // Vue全局使用
+Vue.use(ElementUI) // Vue global use
 
 new Vue({
   el: '#app',
@@ -172,16 +172,16 @@ new Vue({
   components: { App }
 })
 ```
-然后我们在项目根目录下输入`npm run dev`，启动开发模式，这个模式有webpack的热加载，也就是你写完代码，浏览器立即就能响应变化。
+Then we type `npm run dev` in the root directory of the project to start the development mode, which has a webpack hot load, which means that as soon as you finish writing the code, the browser can respond immediately to changes.
 
-为了实现响应式页面，我们要在项目目录下的`index.html`的`head`标签内加入以下`meta`：
+In order to implement a responsive page, we need to add the following `meta` to the` index` tag in the project directory:
 
 `<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">`
 
 
-### 登录界面
+### login interface
 
-进入`src/components`目录，新建一个`Login.vue`的文件。然后我们来写第一个页面：
+Enter the `src / components` directory and create a new` Login.vue` file. Then we write the first page:
 
 ```html
 
@@ -189,7 +189,7 @@ new Vue({
   <el-row class="content">
     <el-col :xs="24" :sm="{span: 6,offset: 9}">
       <span class="title">
-       欢迎登录 
+       Login please 
       </span>
       <el-row>
         <el-input 
@@ -202,7 +202,7 @@ new Vue({
           placeholder="密码"
           type="password">
         </el-input>
-        <el-button type="primary">登录</el-button>
+        <el-button type="primary">log in</el-button>
       </el-row>
     </el-col>
   </el-row>
@@ -233,7 +233,7 @@ export default {
 
 ```
 
-在这里就有一些值得注意的地方。首先是`template`标签内的直接子元素最多只能挂载一个。也就是你不能这么写：
+There are some notable places here. The first is that the direct child elements in the `template` tag can only be mounted at most. That is you can not write:
 
 ```html
 
@@ -244,7 +244,7 @@ export default {
 
 ```
 
-否则会报错：`template syntax error Component template should contain exactly one root element`，template下只能有一个根元素。不过为了写多个元素，你可以这样：
+Otherwise it will complain: `template syntax error Component template should contain exactly one root element` template can only have one root element. But to write multiple elements, you can do something like this:
 
 ```html
 
@@ -257,25 +257,25 @@ export default {
 
 ```
 
-同时注意到，在`Login.vue`的`style`标签内有个`scoped`属性，这个属性能够使这些样式只在这个组件内生效（因为Webpack在渲染的时候会将这个组件内的元素自动打上一串形如`data-v-62a7f97e`这样的属性，对于这些样式也会变成形如`.title[data-v-62a7f97e]{ font-size: 28px;}`的样子，保证了不会和其他组件的样式冲突。
+Also note that there is a `scoped` attribute in the` style` tag in `` Login.vue``, which enables these styles to work only within this component (because Webpack automatically renders the elements in this component when rendered) Put a string of attributes such as `data-v-62a7f97e`, and those styles will also look like` .title [data-v-62a7f97e] {font-size: 28px;} ` Conflicts with other components.
 
-页面写完之后，如果不把组件注册到Vue之下那么页面是不会显示的。因此这个时候需要把`APP.vue`这个文件改写一下：
+After the page is finished, the page will not be displayed without registering the component under Vue. So this time need to rewrite the file APP.vue:
 
 ```html
 <template>
   <div id="app">
     <img src="./assets/logo.png">
-    <Login></Login> <!--使用Login组件-->
+    <Login></Login> <!--Login component-->
   </div>
 </template>
 
 <script>
-import Login from './components/Login' // 引入Login组件
+import Login from './components/Login' // Import Login component
 
 export default {
   name: 'app',
   components: {
-    Login // 注册组件
+    Login // Register components
   }
 }
 </script>
@@ -293,48 +293,48 @@ export default {
 
 ```
 
-也就是把`Login`这个组件注册到`Vue`下，同时你再看浏览器，已经不再是`vue-cli`默认生成的`Hello`欢迎界面了。
+That is, the registration of the `Login` component under` Vue`, and at the same time you look at the browser is no longer the `Hello` welcome screen generated by` vue-cli` by default.
 
 ![Login](https://img.piegg.cn/vue-koa-demo/login.png "Login")
 
-接着我们写一下登录成功后的界面。
+Then we write the login after the success of the interface.
 
-### TodoList页面
+### TodoList page
 
-还是在`src/components`目录下，写一个叫做`TodoList.vue`的文件。
+Still in `src / components` directory, write a file called` TodoList.vue`.
 
-接着我们开始写一个TodoList：
+Then we start to write a TodoList:
 
 ```html
 <template>
   <el-row class="content">
     <el-col :xs="{span:20,offset:2}" :sm="{span:8,offset:8}">
       <span>
-        欢迎：{{name}}！你的待办事项是：
+        Welcome: {{name}}! Your to-do is:
       </span>
-      <el-input placeholder="请输入待办事项" v-model="todos" @keyup.enter.native="addTodos"></el-input>
+      <el-input placeholder="Please enter to do list" v-model="todos" @keyup.enter.native="addTodos"></el-input>
       <el-tabs v-model="activeName">
-        <el-tab-pane label="待办事项" name="first">
+        <el-tab-pane label="To do" name="first">
           <el-col :xs="24">
-            <template v-if="!Done"> <!--v-if和v-for不能同时在一个元素内使用，因为Vue总会先执行v-for-->
+            <template v-if="!Done"> <!-- v-if and v-for can not be used within an element at the same time because Vue always executes v-for-->
               <template v-for="(item, index) in list">
                 <div class="todo-list" v-if="item.status == false">
                   <span class="item">
                     {{ index + 1 }}. {{ item.content }}
                   </span>
                   <span class="pull-right">
-                    <el-button size="small" type="primary" @click="finished(index)">完成</el-button>
-                    <el-button size="small" :plain="true" type="danger" @click="remove(index)">删除</el-button>
+                    <el-button size="small" type="primary" @click="finished(index)">carry out</el-button>
+                    <el-button size="small" :plain="true" type="danger" @click="remove(index)">delete</el-button>
                   </span>
                 </div>
               </template> 
             </template>
             <div v-else-if="Done">
-              暂无待办事项
+              No to-do list
             </div>
           </el-col>
         </el-tab-pane>
-        <el-tab-pane label="已完成事项" name="second">
+        <el-tab-pane label="Completed" name="second">
           <template v-if="count > 0">
             <template v-for="(item, index) in list">
               <div class="todo-list" v-if="item.status == true">
@@ -342,13 +342,13 @@ export default {
                   {{ index + 1 }}. {{ item.content }}
                 </span>
                 <span class="pull-right">
-                  <el-button size="small" type="primary" @click="restore(index)">还原</el-button>
+                  <el-button size="small" type="primary" @click="restore(index)">reduction</el-button>
                 </span>
               </div>
             </template> 
           </template>
           <div v-else>
-            暂无已完成事项
+            No completed items yet
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -367,7 +367,7 @@ export default {
       count: 0
     };
   },
-  computed: { // 计算属性用于计算是否已经完成了所有任务
+  computed: { // Calculated properties are used to calculate whether all tasks have been completed
     Done(){
       let count = 0;
       let length = this.list.length;
@@ -395,24 +395,24 @@ export default {
       this.todos = '';
     },
     finished(index) {
-      this.$set(this.list[index],'status',true) // 通过set的方法让数组的变动能够让Vue检测到
+      this.$set(this.list[index],'status',true) // Vested by the set method allows the array to detect changes
       this.$message({
         type: 'success',
-        message: '任务完成'
+        message: 'mission completed'
       })
     },
     remove(index) {
       this.list.splice(index,1);
       this.$message({
         type: 'info',
-        message: '任务删除'
+        message: 'Task to delete'
       })
     },
     restore(index) {
       this.$set(this.list[index],'status',false)
       this.$message({
         type: 'info',
-        message: '任务还原'
+        message: 'Task to restore'
       })
     }
   }
@@ -439,21 +439,21 @@ export default {
 </style>
 ```
 
-页面构建其实没有什么特别好说的，但是因为我自己有踩点坑，所以还是专门讲一下：
+In fact, there is nothing particularly good page construction, but because I have to check out the pit, it is still a special talk about:
 
-1. `v-if`和`v-for`放在一个元素内同时使用，因为Vue总会先执行`v-for`，所以导致`v-if`不会被执行。替代地，你可以使用一个额外的`template`元素用来放置`v-if`或者`v-for`从而达到同样的目的。这是相关的[issue](https://github.com/vuejs/vue/issues/3106)。
+1. `v-if` and` v-for` are used together in one element, because Vue always executes `v-for`, so` v-if` will not be executed. Instead, you can use the extra `template` element to put` v-if` or `v-for` for the same purpose. This is relevant [issue] (https://github.com/vuejs/vue/issues/3106).
 
-2. 计算属性对于直接的数据比如`a: 2` -> `a: 3`这样的数据变动可以直接检测到。但是如果是本例中的`list`的某一项的`status`这个属性变化了，如果我们直接使用`list[index].status = true`这样的写法的话，Vue将无法检测到数据变动。替代地，可以使用`set`方法（全局是`Vue.set()`，实例中是`this.$set()`），通过`set`方法可以让数据的变动变得可以被检测到。从而让计算属性能够捕捉到变化。可以参考官方文档对于响应式原理的[描述](https://cn.vuejs.org/v2/guide/reactivity.html)。
+2. Calculate the property For direct data such as `a: 2` ->` a: 3` such a data change can be directly detected. But if this property of `status` in one of the` list` s in this example is changed, Vue will not be able to detect any changes in the data if we directly use the wording of `list [index] .status = true`. Instead, you can use the `set` method (globally` Vue.set () `and in your case` this. $ Set () `), which makes it possible to detect changes in the data using the` set` method. This allows computing properties to capture changes. You can refer to the official documentation for the [description] of the reactive principle (https://cn.vuejs.org/v2/guide/reactivity.html).
 
-![Todolist](https://img.piegg.cn/vue-koa-demo/todolist.gif "Todolist")
+! [Todolist] (https://img.piegg.cn/vue-koa-demo/todolist.gif "Todolist")
 
-写完`TodoList`之后，我们需要将它和`vue-router`配合起来，从而使这个单页应用能够进行页面跳转。
+After `TodoList`, we need to tie it up with` vue-router` to make this one-page application available for page jumps.
 
-### 页面路由
+### page routing
 
-由于不采用服务端渲染，所以页面路由走的是前端路由。安装一下`vue-router`：`yarn add vue-router`。
+Because the server-side rendering is not used, the page routing is the front-end routing. Install `vue-router`:` yarn add vue-router`.
 
-安装好后，我们挂载一下路由。打开`main.js`文件改写如下：
+After installation, we mount the route. Open the main.js file to rewrite the following:
 
 ```js
 // src/main.js
@@ -471,11 +471,11 @@ import Login from `./components/Login`
 import TodoList from `./components/TodoList`
 
 const router =  new VueRouter({
-  mode: 'history', // 开启HTML5的history模式，可以让地址栏的url长得跟正常页面跳转的url一样。（不过还需要后端配合，讲Koa的时候会说）
+  mode: 'history', // Open HTML5 history mode, you can make the address bar url looks like the normal page jump url. (But also need back-end cooperation, when talking about Koa will say)
   base: __dirname, 
   routes: [
     {
-      path: '/',  // 默认首页打开是登录页
+      path: '/',  // The default home page open is the login page
       component: Login
     },
     {
@@ -484,19 +484,19 @@ const router =  new VueRouter({
     },
     {
       path: '*',
-      redirect: '/' // 输入其他不存在的地址自动跳回首页
+      redirect: '/' // Enter the other address does not exist automatically jump back to the home page
     }
   ]
 })
 
 const app = new Vue({
-  router: router, // 启用router
+  router: router, // Enable router
   render: h => h(App) 
-}).$mount('#app') //挂载到id为app的元素上
+}).$mount('#app') // Mount to the id of the app element
 
 ```
 
-这样就把路由挂载好了，但是你打开页面发现好像还是没有什么变化。这是因为我们没有把路由视图放到页面上。现在我们改写一下`APP.vue`：
+This put the routing is good, but if you open the page to find what seems to be no change. This is because we did not put the route view on the page. Now we rewrite `APP.vue`:
 
 ```html
 <!-- APP.vue -->
@@ -504,13 +504,13 @@ const app = new Vue({
 <template>
   <div id="app">
     <img src="./assets/logo.png">
-    <router-view></router-view> <!-- 原本的Login换成了router-view 这就是路由视图渲染的目标元素-->
+    <router-view></router-view> <!-- The original Login replaced router-view This is the target view of the route view rendering -->
   </div>
 </template>
 
 <script>
 export default {
-  name: 'app' // 不需要再引入`Login`\`TodoList`组件了，因为在路由里已经注册了
+  name: 'app' // You do not need to import the `Login` \` TodoList` component, because it's already registered in the route
 }
 </script>
 
@@ -527,25 +527,25 @@ export default {
 
 ```
 
-然后再看一下你的页面，这个时候你如果在地址栏后加上`/todolist`那么就会跳转到`TodoList`页面啦。
+And then look at your page, this time if you add `/ todolist` in the address bar then it will jump to the` TodoList` page.
 
-不过我们如何通过点击登录按钮跳转到`TodoList`呢？改写一下`Login.vue`，就可以跳转了。
+But how do we jump to `TodoList` by clicking the login button? Rewrite the `Login.vue`, you can jump.
 
-只需要给登录的`button`加一个方法即可：
+Just need to sign in the `button` plus one method:
 
 ```html
 <!-- Login.vue -->
 ······
 
-<!-- 给input增加键盘事件，当输入完密码回车也执行loginToDo方法 -->
+<!-- to increase input keyboard events, when you enter the password carriage return also perform loginToDo method -->
 <el-input 
   v-model="password" 
   placeholder="密码"
   type="password"
   @keyup.enter.native="loginToDo">
 </el-input>
-<!-- 增加一个click方法 loginToDo -->
-<el-button type="primary" @click="loginToDo">登录</el-button>
+<!-- add a click method loginToDo -->
+<el-button type="primary" @click="loginToDo">log in</el-button>
 
 ······
 
@@ -559,7 +559,7 @@ export default {
   },
   methods: {
     loginToDo() {
-      this.$router.push('/todolist') // 编程式路由，通过push方法，改变路由。
+      this.$router.push('/todolist') // Programmed routing, through the push method, change the routing.
     }
   }
 };
@@ -567,68 +567,68 @@ export default {
 
 ```
 
-然后你就可以通过点击`登录`按钮进行页面跳转了。并且你可以发现，页面地址从`localhost:8080`变成了`localhost:8080/todolist`，长得跟正常的url跳转一样。（但是实际上我们是单页应用，只是在应用内进行页面跳转而已，没有向后端额外请求）
+Then you can jump through the page by clicking the `Login` button. And you can see that the page address has changed from `localhost: 8080` to` localhost: 8080 / todolist`, which looks like the normal url jump. (But in fact we are single-page applications, just page jump within the application, there is no additional request to the back end)
 
-![login2todolist](https://img.piegg.cn/vue-koa-demo/login2todolist.gif "login2todolist")
+! [login2todolist] (https://img.piegg.cn/vue-koa-demo/login2todolist.gif "login2todolist")
 
-至此，我们已经完成了一个纯前端的单页应用，能够进行页面跳转，能够做简单的ToDoList的添加和删除和还原。当然这个东西只能算是个能看不能用的东西——因为登录系统有名无实、ToDoList只要页面刷新一下就没了。
+So far, we have completed a single front-end single-page application that enables page jumps, simple ToDoList additions and deletions and restores. Of course, this thing can only be regarded as something that can not be used - because the login system is a real name, ToDoList as long as the page refresh about gone.
 
-于是我们可以先把前端放一放。开启我们的后端之旅。
+So we can put the front first put. Open our back-end tour.
 
-## 后端环境搭建
+## back-end environment to build
 
 ### MySQL
 
-之所以没有用Node界大家普遍喜爱的`Mongodb`主要是因为之前我用过它，而没有用过`MySQL`，本着学习的态度，我决定用用`MySQL`。还有就是`Express + Mongodb`的教程其实很早之前就已经满大街都是了。所以如果你觉得`Mongodb`更合你的胃口，看完本文你完全可以用`Mongodb`构建一个类似的应用。
+The reason why I did not use `Mongodb`, which is generally popular in Node community, was mainly because I had used it before and did not use` MySQL`. I decided to use `MySQL` in a learning attitude. There is actually a `Express + Mongodb` tutorial in fact a long time ago is full of the streets. So if you think `Mongodb` is more appetizing, you can build a similar application using` Mongodb` after reading this article.
 
-去`MySQL`的[官网](http://dev.mysql.com/downloads/)下载安装对应平台`MySQL`的`Community Server`。
+To `MySQL` [official website] (http://dev.mysql.com/downloads/) to download and install the corresponding platform` MySQL` `Community Server`.
 
-通常来说安装的步骤都是比较简单的。对于`MySQL`的基本安装、开启步骤可以参考这篇[文章](http://www.rathishkumar.in/2016/01/how-to-install-mysql-server-on-windows.html)，这篇是windows的。当然其他平台的安装也是很方便的，都有相应的包管理工具可以获取。值得注意的就是，安装完`MySQL`之后你需要设定一下`root`账户的密码。保证安全性。如果你漏了设定，或者你不知道怎么设定，可以参考这篇[文章](https://www.howtoforge.com/setting-changing-resetting-mysql-root-passwords)
+Generally speaking, the installation steps are relatively simple. For the basic MySQL installation, you can refer to this [article] (http://www.rathishkumar.in/2016/01/how-to-install-mysql-server-on-windows.html) for this step, which Articles are windows Of course, the installation of other platforms is also very convenient, there is a corresponding package management tools can be obtained. It is noteworthy that, after installing `MySQL` you need to set the` root` account password. Ensure safety. If you missed the settings, or you do not know how to set, you can refer to this [article] (https://www.howtoforge.com/setting-changing-resetting-mysql-root-passwords)
 
-因为我对`MySQL`的SQL语句不是很熟悉，所以我需要一个可视化的工具来操作`MySQL`。Windows上我用的是[HediSQL](http://www.heidisql.com/)，macOS上我用的是[Sequel Pro](https://www.sequelpro.com/)。它们都是免费的。
+Because I'm not familiar with MySQL's SQL statements, I needed a visual tool to manipulate MySQL. I use [HediSQL] on Windows (http://www.heidisql.com/), and on the macOS I use [Sequel Pro] (https://www.sequelpro.com/). They are free.
 
-然后我们可以用这些可视化工具连上MySQL的server（默认端口是3306）之后，创建一个新的数据库，叫做`todolist`。（当然你也可以用SQL语句:`CREATE DATABASE todolist`，之后不再赘述）。
+Then we can use these visual tools to connect to MySQL's server (the default is 3306) and create a new database called `todolist`. (Of course, you can also use the SQL statement: `CREATE DATABASE todolist`, will not repeat them later).
 
-接着我们可以来开始创建数据表了。
+Then we can start to create the datasheet.
 
-我们需要创建两张表，一张是用户表，一张是待办事项表。用户表用于登录、验证，待办事项表用于展示我们的待办事项。
+We need to create two tables, one for the user table and one for the to-do list. User tables are used to log in, verify, and to-do lists are used to showcase our to-do list.
 
-创建一张`user`表，其中`password`我们稍后会进行`bcrypt`加密（取128位）。
+Create a `user` table, where` password` will be `bcrypt` encrypted (taking 128 bits) later.
 
-| 字段 | 类型 | 说明|
+| Field | Type | Description |
 | --- | --- | --- |
-| id | int（自增） | 用户的id |
-| user_name | CHAR(50) | 用户的名字 |
-| password | CHAR(128) | 用户的密码 |
+| id | int (self-increment) | id of the user
+| user_name | CHAR (50) | The user's name |
+| password | CHAR (128) | user's password |
 
-创建一张`list`表，所需的字段是`id`、`user_id`、`content`、`status`即可。
+Create a `list` table, the required fields are` id`, `user_id`,` content`, `status`.
 
-| 字段 | 类型 | 说明|
+| Field | Type | Description |
 | --- | --- | --- |
-| id | int（自增） | list的id |
-| user_id | int(11) | 用户的id |
-| content | CHAR(255) | list的内容 |
-| status | tinyint(1) | list的状态 |
+| id | int (self-increment) | list id |
+| user_id | int (11) | user id |
+| content | CHAR (255) | Contents of list |
+| status | tinyint (1) | Status of list |
 
-直接跟数据库打交道的部分基本就是这样了。
+The basic part of dealing directly with the database is like this.
 
 ### Sequelize
 
-跟数据库打交道的时候我们都需要一个好的操作数据库的工具，能够让我们用比较简单的方法来对数据库进行增删改查。对于`Mongodb`来说大家熟悉的是[`Mongoose`](http://mongoosejs.com/)以及我用过一个相对更简单点的[`Monk`](https://github.com/Automattic/monk)。对于`MySQL`，我选用的是[`Sequelize`](https://github.com/sequelize/sequelize)，它支持多种关系型数据库（`Sqlite`、`MySQL`、`Postgres`等），它的操作基本都能返回一个`Promise`对象，这样在Koa里面我们能够很方便地进行"同步"操作。
+When dealing with the database we all need a good tool to operate the database, allowing us to use a relatively simple method to add or delete the database to check. [Mongoose`] (http://mongoosejs.com/) is familiar to `Mongodb` and I used a relatively simpler [Monk`] (https://github.com/Automattic / monk). For MySQL, I chose [`Sequelize`] (https://github.com/sequelize/sequelize) and it supports multiple relational databases (` Sqlite`, `MySQL`,` Postgres`, etc.) Its operation basically returns a `Promise` object so that we can easily 'synchronize' it in Koa.
 
-> 更多关于Sequelize的用法，可以参考[官方文档](http://docs.sequelizejs.com/en/latest/)，以及这两篇文章——[Sequelize中文API文档](http://itbilu.com/nodejs/npm/VkYIaRPz-.html)、[Sequelize和MySQL对照](https://segmentfault.com/a/1190000003987871)
+> For more on the use of Sequelize, you can refer to [official documentation] (http://docs.sequelizejs.com/en/latest/), and these two articles - [Sequelize Chinese API documentation] (http: // itbilu .com / nodejs / npm / VkYIaRPz-.html), [Sequelize and MySQL Controls] (https://segmentfault.com/a/1190000003987871)
 
-在用`Sequelize`连接数据库之前我们需要把数据库的表结构用`sequelize-auto`导出来。
+Before connecting to the database using `Sequelize` we need to export the table structure of the database using` sequelize-auto`.
 
-> 更多关于`sequelize-auto`的使用可以参考[官方介绍](https://github.com/sequelize/sequelize-auto)或者[这篇文章](http://itbilu.com/nodejs/npm/41mRdls_Z.html)
+> More about the use of `sequelize-auto` can refer to [official introduction] (https://github.com/sequelize/sequelize-auto) or [this article] (http://itbilu.com/nodejs/npm /41mRdls_Z.html)
 
-由此我们需要分别安装这几个依赖：`yarn global add sequelize-auto && yarn add sequelize mysql`。 
+So we need to install these several dependencies: `yarn global add sequelize-auto && yarn add sequelize mysql`.
 
-> 注：上面用yarn安装的mysql是nodejs环境下的mysql驱动。
+> Note: The mysql installed above the yarn is the mysql driver nodejs environment.
 
-进入`server`的目录，执行如下语句`sequelize-auto -o "./schema" -d todolist -h 127.0.0.1 -u root -p 3306 -x XXXXX -e mysql`，（其中 -o 参数后面的是输出的文件夹目录， -d 参数后面的是数据库名， -h 参数后面是数据库地址， -u 参数后面是数据库用户名， -p 参数后面是端口号， -x 参数后面是数据库密码，这个要根据自己的数据库密码来！ -e 参数后面指定数据库为mysql）
+Enter `server` directory, execute the following statement` sequelize-auto -o './schema "-d todolist-h 127.0.0.1-u root-p 3306-x XXXXX-e mysql`, (The-o parameter Is the output folder directory, -d parameter is followed by the database name, -h parameter is followed by the database address, -u parameter is followed by the database user name, -p parameter followed by the port number, -x parameter followed by the database password, this According to their own database password! -e parameter behind the specified database mysql)
 
-然后就会在`schema`文件夹下自动生成两个文件：
+Then it will automatically generate two files in the schema folder:
 
 ```js
 // user.js
@@ -636,13 +636,13 @@ export default {
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('user', {
     id: {
-      type: DataTypes.INTEGER(11), // 字段类型
-      allowNull: false, // 是否允许为NULL
-      primaryKey: true, // 主键
-      autoIncrement: true // 是否自增
+      type: DataTypes.INTEGER(11), // Field Type
+      allowNull: false, // Whether to allow NULL
+      primaryKey: true, // The main key
+      autoIncrement: true // Whether self-increase
     },
     user_name: {
-      type: DataTypes.CHAR(50), // 最大长度为50的字符串
+      type: DataTypes.CHAR(50), // The maximum length of 50 string
       allowNull: false
     },
     password: {
@@ -650,7 +650,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: false
     }
   }, {
-    tableName: 'user' // 表名
+    tableName: 'user' // Table Name
   });
 };
 ```
@@ -685,68 +685,68 @@ module.exports = function(sequelize, DataTypes) {
 
 ```
 
-自动化工具省去了很多我们手动定义表结构的时间。同时注意到生成的数据库表结构文件都自动帮我们`module.exports`出来了，所以很方便我们之后的引入。
+Automation tools save us a lot of time manually defining the table structure. Also noticed that the generated database table structure files automatically come out for our `module.exports`, so it is convenient for us to introduce later.
 
-在`server`目录下的`config`目录下我们新建一个`db.js`，用于初始化`Sequelize`和数据库的连接。
+In `server` directory` config` directory, we create a new `db.js`, used to initialize` Sequelize` and the database connection.
 
 ```js
 // db.js
 
-const Sequelize = require('sequelize'); // 引入sequelize
+const Sequelize = require('sequelize'); // Introduced sequelize
 
-// 使用url连接的形式进行连接，注意将root: 后面的XXXX改成自己数据库的密码
+// Use url connection to connect, pay attention to the root: behind XXXX into their own database password
 const Todolist = new Sequelize('mysql://root:XXXX@localhost/todolist',{
   define: {
-    timestamps: false // 取消Sequelzie自动给数据表加入时间戳（createdAt以及updatedAt）
+    timestamps: false // Cancel Sequelzie automatically adds a timestamp to the data table (createdAt and updatedAt)
   }
 }) 
 
 module.exports = {
-  Todolist // 将Todolist暴露出接口方便Model调用
+  Todolist // Exposing the Todolist to the interface makes the Model call easy
 }
 ```
 
-接着我们去`models`文件夹里将数据库和表结构文件连接起来。在这个文件夹下新建一个`user.js`的文件。我们先来写一个查询用户`id`的东西。
+Then we go to the `models` folder to connect the database and table structure files. Create a new `user.js' file in this folder. Let's write a query for user id.
 
-为此我们可以先在数据库里随意加一条数据：
+To this end we can first add a random data in the database:
 
-![test](https://img.piegg.cn/vue-koa-demo/database-1.png "test")
+! [test] (https://img.piegg.cn/vue-koa-demo/database-1.png "test")
 
-通常我们要查询一个用户id为1的数据，会很自然的想到类似如下的写法：
+Usually we want to query for a user id 1 data, will naturally think of the wording similar to the following:
 
 ```js
 
-const userInfo = User.findOne({ where: { id: 1} }); // 查询
-console.log(userInfo); // 输出结果
+const userInfo = User.findOne({ where: { id: 1} }); // Inquire
+console.log(userInfo); // Output the result
 
 ```
 
-但是上面的写法实际上是行不通的。因为JS的特性让它的IO操作是异步的。而上面的写法，`userInfo`将是返回的一个`Promise`对象，而不是最终的`userInfo`。如果又想用同步的写法获取异步IO操作得到的数据的话，通常情况下是不能直接得到的。但是在Koa里，由于有[`co`](https://github.com/tj/co)的存在，让这一切变得十分简单。改写如下：
+But the above wording actually does not work. Because of the characteristics of JS its IO operation is asynchronous. The above wording, `userInfo` will be a` Promise` returned, not the final `userInfo`. If you want to use synchronous method to get asynchronous IO operation of the data, usually can not be obtained directly. But in Koa it's all very easy due to the existence of [`co`] (https://github.com/tj/co). Rewritten as follows:
 
 ```js
 // models/user.js
 const db = require('../config/db.js'), 
-      userModel = '../schema/user.js'; // 引入user的表结构
-const TodolistDb = db.Todolist; // 引入数据库
+      userModel = '../schema/user.js'; // Introduced the user's table structure
+const TodolistDb = db.Todolist; // Introduced into the database
 
-const User = TodolistDb.import(userModel); // 用sequelize的import方法引入表结构，实例化了User。
+const User = TodolistDb.import(userModel); // Import the table structure with the import method of sequelize, instantiated User.
 
-const getUserById = function* (id){ // 注意是function* 而不是function 对于需要yield操作的函数都需要这种generator函数。
-  const userInfo = yield User.findOne({ // 用yield控制异步操作，将返回的Promise对象里的数据返回出来。也就实现了“同步”的写法获取异步IO操作的数据
+const getUserById = function* (id){ // Note that function * instead of function This generator function is required for functions that require a yield operation.
+  const userInfo = yield User.findOne({ // Use yield to control asynchronous operations and return the data in the returned Promise object. It also achieved the "synchronous" wording to obtain asynchronous IO operation data
     where: {
       id: id
     }
   });
 
-  return userInfo // 返回数据
+  return userInfo // Return data
 }
 
 module.exports = {
-  getUserById  // 导出getUserById的方法，将会在controller里调用
+  getUserById  // Export getUserById method will be called in the controller
 }
 ```
 
-接着我们在`controllers`写一个user的controller，来执行这个方法，并返回结果。
+Then we write a user controller in `controllers` to execute this method and return the result.
 
 ```js
 // controllers/user.js 
@@ -754,19 +754,19 @@ module.exports = {
 const user = require('../models/user.js');
 
 const getUserInfo = function* (){
-  const id = this.params.id; // 获取url里传过来的参数里的id
-  const result = yield user.getUserById(id);  // 通过yield “同步”地返回查询结果
-  this.body = result // 将请求的结果放到response的body里返回
+  const id = this.params.id; // Get the url passed in the parameters in the id
+  const result = yield user.getUserById(id);  // Returns the query result "synchronously" by yield
+  this.body = result // The result of the request will be returned to the body of the response
 }
 
 module.exports = {
-  getUserInfo // 把获取用户信息的方法暴露出去 
+  getUserInfo // The method of obtaining user information is exposed 
 }
 ```
 
-写完这个还不能直接请求，因为我们还没有定义路由，请求经过`Koa`找不到这个路径是没有反应的。
+This can not be done directly requested, because we have not yet defined the route, the request can not find the path through Koa does not respond.
 
-在`routes`文件夹下写一个`auth.js`的文件。（其实`user`表是用于登录的，所以走`auth`）
+Write a `auth.js` file in the` routes` folder. (In fact, `user` table is used for login, so go` auth`)
 
 ```js
 // routes/auth.js
@@ -774,21 +774,21 @@ module.exports = {
 const auth = require('../controllers/user.js'); 
 const router = require('koa-router')();
 
-router.get('/user/:id', auth.getUserInfo); // 定义url的参数是id,用user的auth方法引入router
+router.get('/user/:id', auth.getUserInfo); // Define the url parameter is id, using the user's auth method into the router
 
-module.exports = router; // 把router规则暴露出去
+module.exports = router; // The router rules are exposed
 ```
 
-至此我们已经接近完成我们的第一个API了，还缺最后一步，将这个路由规则“挂载”到Koa上去。
+At this point we are close to completing our first API, and we are still short of the last step to "mount" the routing rules to Koa.
 
-回到根目录的`app.js`，改写如下：
+Back to the root directory of `app.js`, rewritten as follows:
 
 ```js
 const app = require('koa')()
   , koa = require('koa-router')()
   , json = require('koa-json')
   , logger = require('koa-logger')
-  , auth = require('./server/routes/auth.js'); // 引入auth
+  , auth = require('./server/routes/auth.js'); // Introduced auth
 
 app.use(require('koa-bodyparser')());
 app.use(json());
@@ -805,9 +805,9 @@ app.on('error', function(err, ctx){
   console.log('server error', err);
 });
 
-koa.use('/auth', auth.routes()); // 挂载到koa-router上，同时会让所有的auth的请求路径前面加上'/auth'的请求路径。
+koa.use('/auth', auth.routes()); // Mount to koa-router, at the same time will make all auth request path in front of the request path '/ auth'.
 
-app.use(koa.routes()); // 将路由规则挂载到Koa上。
+app.use(koa.routes()); // Mount routing rules to Koa.
 
 app.listen(8889,() => {
   console.log('Koa is listening in 8889');
@@ -816,62 +816,62 @@ app.listen(8889,() => {
 module.exports = app;
 ```
 
-打开你的控制台，输入`node app.js`，一切运行正常没有报错的话，大功告成，我们的第一个API已经构建完成！
+Open your console, enter `node app.js`, everything works fine without error, and you're done, our first API has been built!
 
-如何测试呢？
+How to test it?
 
 ### API Test
 
-接口在跟跟前端对接之前，我们应该先进行一遍测试，防止出现问题。在测试接口的工具上，我推荐[`Postman`](https://www.getpostman.com/)，这个工具能够很好的模拟发送的各种请求，方便的查看响应结果，用来进行测试是最好不过了。
+Interface before docking with the front, we should first test again to prevent problems. I recommend [`Postman`] (https://www.getpostman.com/) on the tools for testing the interface. This tool is very good at simulating various requests sent, making it easy to see the results of a response and use it for testing Is the best though.
 
-![Postman](https://img.piegg.cn/vue-koa-demo/postman-1.png)
+! [Postman] (https://img.piegg.cn/vue-koa-demo/postman-1.png)
 
-测试成功，我发送了正确的url请求，返回的结果也是我想看到的。我们看到返回的结果实际上是个JSON，这对于我们前后端来说都是十分方便处理的数据格式。
+The test is successful, I sent the correct url request, the result returned is what I want to see. We see that the returned result is actually a JSON, which is a very handy data format for both our front-end and back-end.
 
-但是如果我们代码出了问题，返回error了我们该怎么测试呢？如果说控制台能够反馈一定的信息，但是绝对不充分，并且我们很可能不知道哪步出错了导致最终结果出问题。
+But if we have a problem with the code and return error, how can we test? If the console can feed back some information, it's definitely not enough, and we probably will not know which step went wrong leading to a problem with the end result.
 
-所以我推荐用[VSCode](https://code.visualstudio.com/)这个工具来帮我们调试nodejs后端的代码。它能够添加断点，能够很方便地查看请求的信息。并且配合上[`nodemon`](https://github.com/remy/nodemon)这类的工具，调试简直不要更舒服。
+So I recommend using the [VSCode] (https://code.visualstudio.com/) tool to help us debug code behind nodejs. It can add breakpoints, can easily view the requested information. And with the tools like [`nodemon`] (https://github.com/remy/nodemon), debugging should not be more comfortable.
 
-关于`VSCode`的nodejs调试，可以参考官方的这篇[文章](https://code.visualstudio.com/docs/editor/node-debugging)
+Nodejs debugging on VSCode, you can refer to this official [article] (https://code.visualstudio.com/docs/editor/node-debugging)
 
-> 我自己是用Sublime写代码，用VSCode调试，哈哈。
+> I myself use Sublime write code, debugging with VSCode, ha ha.
 
-### 登录系统的实现
+### login system implementation
 
-刚才实现的不过是一个简单的用户信息查询的接口，但是我们要实现的是一个登录系统，所以还需要做一些工作。
+Just realized is just a simple user information query interface, but we want to achieve is a login system, so still need to do some work.
 
 #### JSON-WEB-TOKEN
 
-基于cookie或者session的登录验证已经屡见不鲜，前段时间`JSON-WEB-TOKEN`出来后很是风光了一把。引入了它之后，能够实现真正无状态的请求，而不是基于session和cookie的存储式的有状态验证。
+Cookie or session based login verification has been common, some time ago `JSON-WEB-TOKEN` came out a very good scenery. It was introduced to enable truly stateless requests instead of stored stateful validation based on sessions and cookies.
 
-关于JSON-WEB-TOKEN的描述可以参考这篇[文章](http://blog.leapoahead.com/2015/09/07/user-authentication-with-jwt/?utm_source=tuicool&utm_medium=referral)比较简单，我还推荐一篇[文章](https://segmentfault.com/a/1190000005783306)，将如何使用JSON-WEB-TOKEN写得很清楚。
+The JSON-WEB-TOKEN description can refer to this [article] (http://blog.leapoahead.com/2015/09/07/user-authentication-with-jwt/?utm_source=tuicool&utm_medium=referral) is relatively simple, I also recommend a [article] (https://segmentfault.com/a/1190000005783306), how to use JSON-WEB-TOKEN clearly written.
 
-另外可以在JSON-WEB-TOKEN的[官网](https://jwt.io/)上感受一下。
+In addition you can JSON-WEB-TOKEN's [official website] (https://jwt.io/) feel.
 
-> Tips：JSON-WEB-TOKEN分三部分，头部信息+主体信息+密钥信息，其中主体传递的信息（是我们存放我们需要的信息的部分）是用BASE64编码的，所以很容易被解码，一定不能存放明文密码这种关键信息！替代地可以存放一些不是特别关键的信息，比如用户名这样能够做区分的信息。
+> Tips: JSON-WEB-TOKEN is divided into three parts, the header information + principal information + key information, which the body of the information (we store the information we need) is BASE64 encoding, it is easy to decode , Must not be able to store the plain text password this key information! Instead, it is possible to store information that is not particularly critical, such as user name, which can be distinguished.
 
-简单来说，运用了JSON-WEB-TOKEN的登录系统应该是这样的：
+In simple terms, the login system using JSON-WEB-TOKEN should look like this:
 
-1. 用户在登录页输入账号密码，将账号密码（密码进行md5加密）发送请求给后端
-2. 后端验证一下用户的账号和密码的信息，如果符合，就下发一个TOKEN返回给客户端。如果不符合就不发送TOKEN回去，返回验证错误信息。
-3. 如果登录成功，客户端将TOKEN用某种方式存下来（SessionStorage、LocalStorage）,之后要请求其他资源的时候，在请求头（Header）里带上这个TOKEN进行请求。
-4. 后端收到请求信息，先验证一下TOKEN是否有效，有效则下发请求的资源，无效则返回验证错误。
+1. The user enters the account password on the login page, sends the request to the backend with the account password (md5 encrypted)
+2. Back-end verify the user's account and password information, if the match, it issued a TOKEN returned to the client. If not, do not send TOKEN back, return verification error message.
+3. If the login is successful, the client saves the TOKEN in some way (SessionStorage, LocalStorage), and then takes the TOKEN in the request header to request other resources.
+4 back-end received request information, first verify TOKEN is valid, the resource is valid, the validation returns invalid error.
 
-通过这个TOKEN的方式，客户端和服务端之间的访问，是`无状态`的：也就是服务端不知道你这个用户到底还在不在线，只要你发送的请求头里的TOKEN是正确的我就给你返回你想要的资源。这样能够不占用服务端宝贵的空间资源，而且如果涉及到服务器集群，如果服务器进行维护或者迁移或者需要CDN节点的分配的话，`无状态`的设计显然维护成本更低。
+Through this TOKEN way, the access between the client and the server is `stateless`: that is, the server does not know that you are still offline, as long as TOKEN in the header of the request you send is correct I'll give you the resources you want. This would not take up valuable space on the server side, and the `` stateless '' design would obviously have lower maintenance costs if servers were involved in server cluster maintenance or migration or CDN node assignments.
 
-话不多说，我们来把`JSON-WEB-TOKEN`用到我们的项目中。
+Without further ado, let's use `JSON-WEB-TOKEN` in our project.
 
-`yarn add koa-jwt`，安装`Koa`的`JSON-WEB-TOKEN`库。
+`yarn add koa-jwt`, install` Koa` `JSON-WEB-TOKEN` library.
 
-我们需要在`models`里的`user.js`加一个方法，通过用户名查找用户：
+We need to add a method `user.js` in` models` to find the user by username:
 
 ```js
 // models/user.js
 // ......
-// 前面的省略了
+// Omitted in front of
 
 
-// 新增一个方法，通过用户名查找
+// Add a method to find by username
 const getUserByName = function* (name){
   const userInfo = yield User.findOne({
     where: {
@@ -883,52 +883,52 @@ const getUserByName = function* (name){
 }
 
 module.exports = {
-  getUserById, // 导出getUserById的方法，将会在controller里调用
+  getUserById, // Export getUserById method will be called in the controller
   getUserByName
 }
 
 ```
 
-然后我们写一下`controllers`里的`user.js`：
+Then we write `user.js` in` controllers`:
 
 ```js
 // controllers/user.js
 
 const user = require('../models/user.js');
-const jwt = require('koa-jwt'); // 引入koa-jwt
+const jwt = require('koa-jwt'); // Introduced koa-jwt
 
 const getUserInfo = function* (){
-  const id = this.params.id; // 获取url里传过来的参数里的id
-  const result = yield user.getUserById(id);  // 通过yield “同步”地返回查询结果
-  this.body = result // 将请求的结果放到response的body里返回
+  const id = this.params.id; // Get the url passed in the parameters in the id
+  const result = yield user.getUserById(id);  // Returns the query result "synchronously" by yield
+  this.body = result // The result of the request will be returned to the body of the response
 }
 
 const postUserAuth = function* (){
-  const data = this.request.body; // post过来的数据存在request.body里
+  const data = this.request.body; // post data exists request.body
   const userInfo = yield user.getUserByName(data.name);
 
-  if(userInfo != null){ // 如果查无此用户会返回null
+  if(userInfo != null){ // If no such user will return null
     if(userInfo.password != data.password){
       this.body = {
-        success: false, // success标志位是方便前端判断返回是正确与否
+        success: false, // The success flag is for the convenience of the front-end to determine whether the return is correct or not
         info: '密码错误！'
       }
-    }else{ // 如果密码正确
+    }else{ // If the password is correct
       const userToken = {
         name: userInfo.user_name,
         id: userInfo.id
       }
-      const secret = 'vue-koa-demo'; // 指定密钥，这是之后用来判断token合法性的标志
-      const token = jwt.sign(userToken,secret); // 签发token
+      const secret = 'vue-koa-demo'; // Specify the key, which is used to determine token legitimacy later
+      const token = jwt.sign(userToken,secret); // Issue token
       this.body = {
         success: true,
-        token: token, // 返回token
+        token: token, // Return token
       }
     }
   }else{
     this.body = {
       success: false,
-      info: '用户不存在！' // 如果用户不存在返回用户不存在
+      info: '用户不存在！' // If the user does not exist the return user does not exist
     }
   }
 }
@@ -939,7 +939,7 @@ module.exports = {
 }
 ```
 
-再把`routes`里的路由规则更新一下：
+Then the routing rules in the `routes` update:
 
 ```js
 // routes/auth.js
@@ -947,19 +947,19 @@ module.exports = {
 const auth = require('../controllers/user.js'); 
 const router = require('koa-router')();
 
-router.get('/user/:id', auth.getUserInfo); // 定义url的参数是id,用user的auth方法引入router
+router.get('/user/:id', auth.getUserInfo); // Define the url parameter is id, using the user's auth method into the router
 router.post('/user', auth.postUserAuth);
 
-module.exports = router; // 把router规则暴露出去
+module.exports = router; // The router rules are exposed
 ```
 
-由此我们写完了用户认证的部分。接下去我们要改写一下前端登录的方法。
+As a result, we have completed the user authentication section. Next we have to rewrite the front-end login method.
 
-#### 引入Axios
+#### Introduced Axios
 
-之前在学`Vue`的时候一直用的是[`vue-resource`](https://github.com/pagekit/vue-resource)，不过后来`Vue2`出来之后，Vue官方不再默认推荐它为官方的`ajax`网络请求库了。替代地推荐了一些其他的库，比如就有我们今天要用的[`axios`](https://github.com/mzabriskie/axios)。我之前也没有用过它，不过看完它的star和简要介绍`Promise based HTTP client for the browser and node.js`，能够同时支持node和浏览器端的ajax请求工具（还是基于Promised的！），我想就有必要用一用啦。
+It used to be [`vue-resource`] (https://github.com/pagekit/vue-resource) when learning Vue, but after Vue2 came out, Vue did not recommend it by default The official ajax network request library. Instead, I recommend some other libraries, such as [`axios`] (https://github.com/mzabriskie/axios) that we are using today. I have not used it before, but after reading its star and a brief introduction of `` Promise based HTTP client for the browser and node.js` ', it supports both node and browser-based ajax request tools (based on Promised!), I think it is necessary to use it.
 
-`yarn add axios`，安装`axios`。然后我们在`src/main.js`里面引入`axios`：
+`yarn add axios`, install` axios`. Then we introduce `axios` in` src / main.js`:
 
 ```js
 
@@ -969,7 +969,7 @@ module.exports = router; // 把router规则暴露出去
 
 import Axios from 'axios'
 
-Vue.prototype.$http = Axios // 类似于vue-resource的调用方法，之后可以在实例里直接用this.$http.get()等
+Vue.prototype.$http = Axios // Similar to the calling method of vue-resource, you can use this. $ Http.get ()
 
 // ...
 
@@ -978,7 +978,7 @@ Vue.prototype.$http = Axios // 类似于vue-resource的调用方法，之后可�
 
 ```js
 // Login.vue
-// 省略前面的部分
+// Omit the front part
 
  methods: {
     loginToDo() {
@@ -986,22 +986,22 @@ Vue.prototype.$http = Axios // 类似于vue-resource的调用方法，之后可�
         name: this.account,
         password: this.password
       } 
-      this.$http.post('/auth/user', obj) // 将信息发送给后端
-        .then((res) => { // axios返回的数据都在res.data里
-          if(res.data.success){ // 如果成功
-            sessionStorage.setItem('demo-token',res.data.token); // 用sessionStorage把token存下来
-            this.$message({ // 登录成功，显示提示语
+      this.$http.post('/auth/user', obj) // Send the information to the backend
+        .then((res) => { // The data returned by axios res.data
+          if(res.data.success){ // If successful
+            sessionStorage.setItem('demo-token',res.data.token); // Save the token with sessionStorage
+            this.$message({ // Login is successful, the prompt is displayed
               type: 'success',
               message: '登录成功！'
             }); 
-            this.$router.push('/todolist') // 进入todolist页面，登录成功
+            this.$router.push('/todolist') // Into todolist page, log in successfully
           }else{
-            this.$message.error(res.data.info); // 登录失败，显示提示语
-            sessionStorage.setItem('demo-token',null); // 将token清空
+            this.$message.error(res.data.info); // Login failed, the prompt is displayed
+            sessionStorage.setItem('demo-token',null); // Clear the token
           }
         }, (err) => {
             this.$message.error('请求错误！')
-            sessionStorage.setItem('demo-token',null); // 将token清空
+            sessionStorage.setItem('demo-token',null); // Clear the token
         })
     }
   }
@@ -1009,51 +1009,51 @@ Vue.prototype.$http = Axios // 类似于vue-resource的调用方法，之后可�
 
 
 
-#### 密码bcrypt加密
+#### Password bcrypt encryption
 
-最早的时候我是在前端用了md5加密，但是后来经过提醒这种方式并不安全。md5加密的容易被破解。所以就采用了`bcrypt`的加密方式。全部走后端加密。也许你会问这样明文给后端发送密码安全吗？没问题，只要用上HTTPS，这将不是问题。
+The earliest time I was in the front with md5 encryption, but later reminded this way is not safe. md5 encrypted easily cracked. So I used `bcrypt` encryption method. All back-end encryption. Maybe you will ask such a clear text to the back-end password security? No problem, as long as you use HTTPS, this will not be a problem.
 
-`yarn add bcryptjs`安装bcryptjs。
+`yarn add bcryptjs` Install bcryptjs.
 
 ```js
 // controllers/user.js
 
 const user = require('../models/user.js');
-const jwt = require('koa-jwt'); // 引入koa-jwt
+const jwt = require('koa-jwt'); // Introduced koa-jwt
 const bcrypt = require('bcryptjs');
 
 const getUserInfo = function* (){
-  const id = this.params.id; // 获取url里传过来的参数里的id
-  const result = yield user.getUserById(id);  // 通过yield “同步”地返回查询结果
-  this.body = result // 将请求的结果放到response的body里返回
+  const id = this.params.id; // Get the url passed in the parameters in the id
+  const result = yield user.getUserById(id);  // Returns the query result "synchronously" by yield
+  this.body = result // The result of the request will be returned to the body of the response
 }
 
 const postUserAuth = function* (){
-  const data = this.request.body; // post过来的数据存在request.body里
+  const data = this.request.body; // post data exists request.body
   const userInfo = yield user.getUserByName(data.name);
 
-  if(userInfo != null){ // 如果查无此用户会返回null
-    if(!bcrypt.compareSync(data.password, userInfo.password)){ // 验证密码是否正确
+  if(userInfo != null){ // If no such user will return null
+    if(!bcrypt.compareSync(data.password, userInfo.password)){ // Verify the password is correct
       this.body = {
-        success: false, // success标志位是方便前端判断返回是正确与否
-        info: '密码错误！'
+        success: false, // The success flag is for the convenience of the front-end to determine whether the return is correct or not
+        info: 'wrong password!'
       }
-    }else{ // 如果密码正确
+    }else{ // If the password is correct
       const userToken = {
         name: userInfo.user_name,
         id: userInfo.id
       }
-      const secret = 'vue-koa-demo'; // 指定密钥，这是之后用来判断token合法性的标志
-      const token = jwt.sign(userToken,secret); // 签发token
+      const secret = 'vue-koa-demo'; // Specify the key, which is used to determine token legitimacy later
+      const token = jwt.sign(userToken,secret); // Issue token
       this.body = {
         success: true,
-        token: token, // 返回token
+        token: token, // Return token
       }
     }
   }else{
     this.body = {
       success: false,
-      info: '用户不存在！' // 如果用户不存在返回用户不存在
+      info: 'User does not exist!' // If the user does not exist the return user does not exist
     }
   }
 }
@@ -1064,21 +1064,21 @@ module.exports = {
 }
 ```
 
-因为我们数据库里还是存着明文的`123`作为密码，现在要先将它bcrypt化，加密后变为：`$2a$10$x3f0Y2SNAmyAfqhKVAV.7uE7RHs3FDGuSYw.LlZhOFoyK7cjfZ.Q6`，将其替换掉数据库里的`123`。不做这步我们将无法登录。
+Because our database is still stored in plain text `123` as the password, it should first be bcrypt, encrypted into: $ 2a $ 10 $ x3f0Y2SNAmyAfqhKVAV.7uE7RHs3FDGuSYw.LlZhOFoyK7cjfZ.Q6`, replace it with the database ` 123`. We will not be able to login without this step.
 
-还没有大功告成，因为我们的界面跑在`8080`端口，但是Koa提供的API跑在`8889`端口，所以如果直接通过`/auth/user`这个url去post是请求不到的。就算写成`localhost:8889/auth/user`也会因为跨域问题导致请求失败。
+We're not done yet, because our interface is running on `8080`, but the API provided by Koa runs on` 8889`, so it would not be possible to post it directly via the `/ auth / user` url. Even if written as `localhost: 8889 / auth / user`, the request will fail because of cross-domain issues.
 
-这个时候有两种最方便的解决办法：
+This time there are two most convenient solution:
 
-1. 如果是跨域，服务端只要在请求头上加上[`CORS`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS)，客户端即可跨域发送请求。
-2. 变成同域，即可解决跨域请求问题。
+1. If it is cross-domain, the server as long as the request header with [`CORS`] (https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS), the client can cross Domain sends the request.
+2. Into the same domain, you can solve the cross-domain request.
 
-第一种也很方便，采用[`kcors`](https://github.com/koajs/cors)即可解决。
-不过为了之后部署方便，我们采用第二种，变成同域请求。
+The first one is also handy and can be solved using [`kcors`] (https://github.com/koajs/cors).
+However, in order to facilitate the deployment later, we use the second, into a domain request.
 
-打开根目录下的`config/index.js`，找到`dev`下的`proxyTable`，利用这个`proxyTable`我们能够将外部的请求通过`webpack`转发给本地，也就能够将跨域请求变成同域请求了。
+Open `config / index.js` in the root directory and find the` proxyTable` under `dev`. Using this` proxyTable` we can forward external requests to `local` through` webpack`, Into the domain request.
 
-将`proxyTable`改写如下:
+Rewrite the `proxyTable` as follows:
 
 ```js
  proxyTable: {
@@ -1093,64 +1093,64 @@ module.exports = {
 }
 ```
 
-上面的意思是，我们在组件里请求的地址如果是`/api/xxxx`实际上请求的是`http://localhost:8889/api/xxxx`，但是由于`webpack`帮我们代理了localhost的8889端口的服务，所以我们可以把实际是跨域的请求当做是同域下的接口来调用。
+The above meaning is that the address we requested in the component if `/ api / xxxx` actually requests` http: // localhost: 8889 / api / xxxx`, but because `webpack` helped us to proxy localhost 8889 port service, so we can call the actual cross-domain request as an interface under the same domain.
 
-此时重新启动一下`webpack`：先`ctrl+c`退出当前进程，然后`npm run dev`。
+Now restart `webpack`:` ctrl + c` exit the current process, then `npm run dev`.
 
-一切都万事了之后，我们可以看到如下激动人心的画面：
+After everything is done, we can see the following exciting picture:
 
-![login2todolist](https://img.piegg.cn/vue-koa-demo/login2todolist-2.gif "login2todolist")
+! [login2todolist] (https://img.piegg.cn/vue-koa-demo/login2todolist-2.gif "login2todolist")
 
-#### 跳转拦截
+#### jump block
 
-虽然我们现在能够成功登录系统了，但是还是存在一个问题：我在地址栏手动将地址改为`localhost:8080/todolist`我还是能够成功跳转到登录后的界面啊。于是这就需要一个跳转拦截，当没有登录的时候，不管地址栏输入什么地址，最终都重新定向回登录页。
+Although we are now able to successfully log in the system, but there is still a problem: I manually in the address bar to address `localhost: 8080 / todolist` I still be able to successfully jump to the login interface ah. So this requires a jump block, when not logged in, regardless of the address bar to enter any address, eventually redirected back to the login page.
 
-这个时候，从后端给我们传回来的`token`就派上大用处。有`token`就说明我们的身份是经过验证的，否则就是非法的。
+This time, the `token` returned from the backend to us is of great use. Having a token means that our identity is verified, otherwise it is illegal.
 
-`vue-router`提供了页面跳转的钩子，我们可以在`router`跳转前进行验证，如果`token`存在就跳转，如果不存在就返回登录页。
+`vue-router` provides the hook for the page jump. We can validate the` router` before it jumps, and if `token` exists, it will return to the login page if it does not exist.
 
-参考路由的[导航钩子](https://router.vuejs.org/zh-cn/advanced/navigation-guards.html)
+Reference Routing [Navigation Hook] (https://router.vuejs.org/en/advanced/navigation-guards.html)
 
-打开`src/main.js`，修改如下：
+Open `src / main.js` and change as follows:
 
 ```js
 // src/main.js
 
 // ...
 
-const router = new VueRouter({....}) // 省略
+const router = new VueRouter({....}) // abridgement
 
 router.beforeEach((to,from,next) =>{
   const token = sessionStorage.getItem('demo-token');
-  if(to.path == '/'){ // 如果是跳转到登录页的
+  if(to.path == '/'){ // If it is to jump to the login page
     if(token != 'null' && token != null){
-      next('/todolist') // 如果有token就转向todolist不返回登录页
+      next('/todolist') // If there is a token turn to todolist does not return to the login page
     }
-    next(); // 否则跳转回登录页
+    next(); // Otherwise jump back to the login page
   }else{
     if(token != 'null' && token != null){
-      next() // 如果有token就正常转向
+      next() // If there is a token turn normal
     }else{
-      next('/') // 否则跳转回登录页
+      next('/') // Otherwise jump back to the login page
     }
   }
 })
 
-const app = new Vue({...}) // 省略
+const app = new Vue({...}) // abridgement
 
 ```
 
-> **注意：一定要确保要调用 `next()` 方法，否则钩子就不会被 resolved。**如果纯粹调用`next(path)`这样的方法最终还是会回到`.beforeEach()`这个钩子里面来，如果没有写对条件就有可能出现死循环，栈溢出的情况。
+> ** Note: Be sure to call the `next ()` method, otherwise the hook will not be resolved. ** If you just call the `next (path)` method, it eventually returns to the `.beforeEach ()` hook, which can lead to an infinite loop if the condition is not written and the stack overflows.
 
-然后我们就可以看到如下效果：
+Then we can see the following results:
 
-![login2todolist](https://img.piegg.cn/vue-koa-demo/login2todolist-3.gif "login2todolist")
+! [login2todolist] (https://img.piegg.cn/vue-koa-demo/login2todolist-3.gif "login2todolist")
 
-> Tips：这种只判断token存不存在就通过的验证是很不安全的，此例只是做了一个演示，实际上还应该进行更深一层的判断，比如从token解包出来的信息里包含我们想要的信息才可以作为有效token，才可以登录。等等。本文只是做一个简要介绍。
+> Tips: This only to determine the token does not exist on the adoption of the verification is very unsafe, this case is just a demonstration, in fact, should be carried out a deeper level of judgments, such as from the token unpacked information contains The information we want can be used as a valid token before we can log in. and many more. This article is just a brief introduction.
 
-#### 解析token
+#### resolve token
 
-注意到我们在签发`token`的时候，写过这样几句话：
+Notice that when we issued `token`, we wrote something like this:
 
 ```js
 
@@ -1162,17 +1162,17 @@ const userToken = {
   name: userInfo.user_name,
   id: userInfo.id
 }
-const secret = 'vue-koa-demo'; // 指定密钥，这是之后用来判断token合法性的标志
-const token = jwt.sign(userToken,secret); // 签发token
+const secret = 'vue-koa-demo'; // Specify the key, which is used to determine token legitimacy later
+const token = jwt.sign(userToken,secret); // Issue token
 
 // ...
 ```
 
-我们将用户名和id打包进JWT的主体部分，同时我们解密的密钥是`vue-koa-demo`。所以我们可以通过这个信息，来进行登录后的用户名显示，以及用来区别这个用户是谁，这个用户有哪些`Todolist`。
+We package the username and id into the body of the JWT and the key we decrypt is `vue-koa-demo`. So we can use this information to log in after the user name display, and used to distinguish who this user is, this user what `Todolist`.
 
-接下来在`Todolist`页面进行token解析，从而让用户名显示为登录用户名。
+Next in the `Todolist` page for token analysis, so that the user name is displayed as the login user name.
 
-**注意：** 前端直接暴露`secret-key`的做法其实并不安全。正确的做法应该是把token跟用户名和其他不是很重要的信息一起传过来，token只用于验证，而其他信息作为返回值正常返回。这样就不会暴露`secret-key`了。当然本文只是为了方便说明，给出的一个不恰当的获取用户信息的例子。
+**Note:** Front-end direct exposure of `secret-key` is not actually safe. The correct way to do this is to pass the token along with the username and other less important information, token only for validation, and other information returned as return value. This will not expose `secret-key`. Of course, this article is only for convenience of illustration, given an example of inappropriate access to user information.
 
 ```js
 
@@ -1180,12 +1180,12 @@ const token = jwt.sign(userToken,secret); // 签发token
 
 // ...
 
-import jwt from 'jsonwebtoken' // 我们安装koa-jwt的时候会自动下载这个依赖
+import jwt from 'jsonwebtoken' // We will download this dependency automatically when we install koa-jwt
 
 export default {
 
-  created(){ // 组件创建时调用
-    const userInfo = this.getUserInfo(); // 新增一个获取用户信息的方法
+  created(){ // Called when the component is created
+    const userInfo = this.getUserInfo(); // A new way to get user information
     if(userInfo != null){
       this.id = userInfo.id;
       this.name = userInfo.name;
@@ -1197,26 +1197,26 @@ export default {
 
   data () {
     return {
-      name: '', // 用户名改为空
+      name: '', // User name changed to empty
       todos: '',
       activeName: 'first',
       list:[],
       count: 0,
-      id: '' // 新增用户id属性，用于区别用户
+      id: '' // Add user id attribute, used to distinguish users
     };
   },
-  computed: {...}, //省略
+  computed: {...}, //abridgement
 
   methods: {
-    addTodos() {...}, // 省略
+    addTodos() {...}, // abridgement
     finished(index) {...},
     remove(index) {...},
     restore(index) {...},
-    getUserInfo(){ // 获取用户信息
+    getUserInfo(){ // Get user information
       const token = sessionStorage.getItem('demo-token');
       if(token != null && token != 'null'){
-        let decode = jwt.verify(token,'vue-koa-demo'); // 解析token
-        return decode // decode解析出来实际上就是{name: XXX,id: XXX}
+        let decode = jwt.verify(token,'vue-koa-demo'); // Parse token
+        return decode // decode resolve it is actually {name: XXX, id: XXX}
       }else {
         return null
       }
@@ -1227,23 +1227,23 @@ export default {
 // ...
 ```
 
-于是你就可以看到：
+So you can see:
 
-![todolist](https://img.piegg.cn/vue-koa-demo/todolist-1.png "todolist")
+! [todolist] (https://img.piegg.cn/vue-koa-demo/todolist-1.png "todolist")
 
-用户名已经不是我们之前默认的`Molunerfinn`而是登录名`molunerfinn`了。
+The user name is not the default `Molunerfinn` but the login name` molunerfinn`.
 
-## Todolist 增删改查的实现
+# Todolist additions and deletions to change the realization of the investigation
 
-这个部分就是前后端协作了。我们要实现之前在纯前端部分实现的内容。我以最基本的两个方法来举例子：获取`Todolist`以及增加`Todolist`，剩下其实思路大同小异，我就提供代码和注释了，我相信也很容易懂。
+This part is before and after the end of the collaboration. We want to achieve the pure front-end part of the content. I use the most basic two methods for example: Get `Todolist` and add` Todolist`, the rest of the ideas are more or less the same, I provide code and comments, I believe it is easy to understand.
 
-### Token的发送
+### Send Token
 
-之前说了，用JSON-WEB-TOKEN之后，这个系统的验证就完全依靠token了。如果token正确就下发资源，如果资源不正确，就返回错误信息。
+Said before, with JSON-WEB-TOKEN, the verification of this system depends entirely on the token. If the token is correctly delivered resources, if the resources are incorrect, it returns an error message.
 
-因为我们用了`koa-jwt`，所以只需要在每条请求头上加上`Authorization`属性，值是`Bearer {token值}`，然后让`Koa`在接收请求之前验证一下token即可。但是如果每发一条请求就要手动写一句这个，太累了。于是我们可以做到全局`Header`设定。
+Because we used `koa-jwt`, we just need to add the` Authorization` attribute to the Bearer {token value} `header, and then let` Koa` verify the token before receiving the request . However, if you make a manual write a request for each request, too tired. So we can do global Header setting.
 
-打开`src/main.js`，在路由跳转的钩子里加上这句：
+Open `src / main.js`, add this sentence in the route jump hook:
 
 ```js
 
@@ -1258,7 +1258,7 @@ router.beforeEach((to,from,next) =>{
     next(); 
   }else{
     if(token != 'null' && token != null){
-      Vue.prototype.$http.defaults.headers.common['Authorization'] = 'Bearer ' + token; // 全局设定header的token验证，注意Bearer后有个空格
+      Vue.prototype.$http.defaults.headers.common['Authorization'] = 'Bearer ' + token; // Set the header of the global token authentication, note that there is a space Bearer
       next() 
     }else{
       next('/') 
@@ -1268,38 +1268,38 @@ router.beforeEach((to,from,next) =>{
 
 ```
 
-这样就完成了token的客户端发送设定。
+This completes the token client send settings.
 
-### Koa端对Token的验证
+### Koa end Token authentication
 
-接着我们实现两个简单的api，这两个api请求的路径就不是`/auth/xxx`而是`/api/xxx`了。我们还需要实现，访问`/api/*`路径的请求都需要经过`koa-jwt`的验证，而`/auth/*`的请求不需要。
+Then we implement two simple api, the two api request path is not `/ auth / xxx` but `/ api / xxx`. We also need to implement that the request to access the / api / * `path needs to be` koa-jwt` validated, whereas the request for `/ auth / *` is not required.
 
-首先去`models`目录下新建一个`todolist.js`的文件：
+First go to the `models` directory to create a new` todolist.js` file:
 
 ```js
 
 // server/models/todolist.js
 
 const db = require('../config/db.js'), 
-      todoModel = '../schema/list.js'; // 引入todolist的表结构
-const TodolistDb = db.Todolist; // 引入数据库
+      todoModel = '../schema/list.js'; // Introduced todolist table structure
+const TodolistDb = db.Todolist; // Introduced into the database
 
 const Todolist = TodolistDb.import(todoModel); 
 
-const getTodolistById = function* (id){  // 获取某个用户的全部todolist
-  const todolist = yield Todolist.findAll({ // 查找全部的todolist
+const getTodolistById = function* (id){  // Get all the todolists for a user
+  const todolist = yield Todolist.findAll({ // Find all todolist
     where: {
       user_id: id
     },
-    attributes: ['id','content','status'] // 只需返回这三个字段的结果即可
+    attributes: ['id','content','status'] // Just return the results of these three fields can be
   });
 
-  return todolist // 返回数据
+  return todolist // Return data
 }
 
-const createTodolist = function* (data){ // 给某个用户创建一条todolist
+const createTodolist = function* (data){ // Create a todolist for a user
   yield Todolist.create({
-    user_id: data.id, // 用户的id，用来确定给哪个用户创建
+    user_id: data.id, // The id of the user, used to determine which user to create
     content: data.content,
     status: data.status 
   })
@@ -1312,21 +1312,21 @@ module.exports = {
 }
 ```
 
-接着去`controllers`目录下新建一个`todolist.js`的文件：
+Then go to `controllers` directory to create a new` todolist.js` file:
 
 ```js
 // server/controllers/todolist
 
 const todolist = require('../models/todolist.js');
 
-const getTodolist = function* (){ // 获取某个用户的所有todolist
-  const id = this.params.id; // 获取url里传过来的参数里的id
-  const result = yield todolist.getTodolistById(id);  // 通过yield “同步”地返回查询结果
-  this.body = result // 将请求的结果放到response的body里返回
+const getTodolist = function* (){ // Get all todolists for a user
+  const id = this.params.id; // Get the url passed in the parameters in the id
+  const result = yield todolist.getTodolistById(id);  // Returns the query result "synchronously" by yield
+  this.body = result // The result of the request will be returned to the body of the response
 }
 
-const createTodolist = function* (){ // 给某个用户创建一条todolist
-  const data = this.request.body; // post请求，数据是在request.body里的
+const createTodolist = function* (){ // Create a todolist for a user
+  const data = this.request.body; // post request, the data is in request.body
   const result = yield todolist.createTodolist(data);
 
   this.body = {
@@ -1341,7 +1341,7 @@ module.exports = {
 }
 ```
 
-然后去`routes`文件夹里新建一个`api.js`文件：
+Then go to `routes` folder to create a new` api.js` file:
 
 ```js
 
@@ -1350,13 +1350,13 @@ module.exports = {
 const todolist = require('../controllers/todolist.js');
 const router = require('koa-router')();
 
-todolist(router); // 引入koa-router
+todolist(router); // Introduced koa-router
 
-module.exports = router; // 导出router规则
+module.exports = router; // Export the router rules
 
 ```
 
-最后，去根目录下的`app.js`，给koa加上新的路由规则：
+Finally, go to the root directory of `app.js` and add new routing rules to koa:
 
 ```js
 
@@ -1379,7 +1379,7 @@ app.use(function* (next){
   console.log('%s %s - %s', this.method, this.url, ms);
 });
 
-app.use(function *(next){  //  如果JWT验证失败，返回验证失败信息
+app.use(function *(next){  //  If JWT validation fails, validation failure information is returned
   try {
     yield next;
   } catch (err) {
@@ -1400,33 +1400,33 @@ app.on('error', function(err, ctx){
   console.log('server error', err);
 });
 
-koa.use('/auth', auth.routes()); // 挂载到koa-router上，同时会让所有的auth的请求路径前面加上'/auth'的请求路径。
-koa.use("/api",jwt({secret: 'vue-koa-demo'}),api.routes()) // 所有走/api/打头的请求都需要经过jwt中间件的验证。secret密钥必须跟我们当初签发的secret一致
+koa.use('/auth', auth.routes()); // Mount to koa-router, at the same time will make all auth request path in front of the request path '/ auth'.
+koa.use("/api",jwt({secret: 'vue-koa-demo'}),api.routes()) // All / api / header requests need to be validated by jwt middleware. The secret key must be the same as the one we originally issued
 
-app.use(koa.routes()); // 将路由规则挂载到Koa上。
+app.use(koa.routes()); // Mount routing rules to Koa.
 
-// ...省略
+// ...abridgement
 
 ```
 
-至此，后端的两个api已经构建完成。
+At this point, the back end of the two APIs have been constructed.
 
-初始化配置相对复杂一些，涉及到`model`、`controllers`、`routes`和`app.js`，可能会让人望而却步。实际上第一次构建完成之后，后续要添加api，基本上只需要在`model`和`controllers`写好方法，定好接口即可，十分方便。
+The initial configuration is relatively complex, involving `model`,` controllers`, `routes` and` app.js`, can be prohibitive. In fact, the first build is completed, the follow-up to add api, basically only need to write in the `model` and` controllers` method, set the interface can be very convenient.
 
-### 前端对接接口
+### Front-end docking interface
 
-后端接口已经开放，接下来要把前端和后端进行对接。主要有两个对接接口：
+Back-end interface has been open, then the front-end and back-end docking. There are two main docking interface:
 
-1. 获取某个用户的所有todolist
-2. 创建某个用户的一条todolist
+Get all todolists for a user
+Create a todolist for a user
 
-接下来就是改写`Todolist.vue`里的方法了：
+The next step is to rewrite the `Todolist.vue` method:
 
 ```js
 
 // todolist.js
 
-// ... 省略
+// ... abridgement
 
 created(){
   const userInfo = this.getUserInfo();
@@ -1437,10 +1437,10 @@ created(){
     this.id = '';
     this.name = ''
   }
-  this.getTodolist(); // 新增：在组件创建时获取todolist
+  this.getTodolist(); // New: Get todolist when the component is created
 },
 
-// ... 省略
+// ... abridgement
 
 methods: {
   addTodos() {
@@ -1451,29 +1451,29 @@ methods: {
       content: this.todos,
       id: this.id
     }
-    this.$http.post('/api/todolist', obj) // 新增创建请求
+    this.$http.post('/api/todolist', obj) // Add create request
       .then((res) => {
-        if(res.status == 200){ // 当返回的状态为200成功时
+        if(res.status == 200){ // When the return status is 200 success
           this.$message({
             type: 'success',
             message: '创建成功！' 
           })
-          this.getTodolist(); // 获得最新的todolist
+          this.getTodolist(); // Get the latest todolist
         }else{
-          this.$message.error('创建失败！') // 当返回不是200说明处理出问题
+          this.$message.error('创建失败！') // When the return is not 200, the problem is solved
         }
       }, (err) => {
-        this.$message.error('创建失败！') // 当没有返回值说明服务端错误或者请求没发送出去
+        this.$message.error('创建失败！') // When there is no return value that server error or request did not send out
         console.log(err)
       })
-    this.todos = ''; // 将当前todos清空
+    this.todos = ''; // Empty the current todos
   },
-  // ... 省略一些方法
+  // ... Omit some methods
   getTodolist(){
-    this.$http.get('/api/todolist/' + this.id) // 向后端发送获取todolist的请求
+    this.$http.get('/api/todolist/' + this.id) // Send request to the back end for todolist
       .then((res) => {
         if(res.status == 200){
-          this.list = res.data // 将获取的信息塞入实例里的list
+          this.list = res.data // Insert the information obtained into the instance list
         }else{
           this.$message.error('获取列表失败！')
         }
@@ -1486,21 +1486,21 @@ methods: {
 
 ```
 
-至此，前后端的部分已经完整构建。让我们来看看效果：
+At this point, the front and rear ends have been completely constructed. Let's take a look at the effect:
 
-![todolist](https://img.piegg.cn/vue-koa-demo/login2todolist-4.gif "todolist")
+! [todolist] (https://img.piegg.cn/vue-koa-demo/login2todolist-4.gif "todolist")
 
-做到这一步的时候其实我们的应用已经基本完成了。最后的收尾工作，让我们来收一下。
+In fact, when we do this, our application has basically been completed. The final finishing work, let's take a look.
 
-原本的前端版本还有`完成`、`删除`、`还原`三种状态，其中`完成`和`还原`只是状态的切换（更新），所以可以算是一个api，然后就是删除是单独一个api。于是我们就能算是完成了增、删、改、查了。接下去的部分就提供代码就行，其实思路跟之前的是一样的，只不过操作的函数不一样罢了。
+The front-end version of the original `` `` delete `` `` `` `` `` `` `` `the completion of the state` `` `` `` `` `` `` `` . So we can be completed by the increase, delete, change, check out. The next part of the code to provide on the line, in fact, the idea is the same as before, but the function of the operation is not the same Bale.
 
-### Todolist的改、删
+### Todolist change, delete
 
 ```js
 
 // server/models/todolist.js
 
-// ...省略
+// ...abridgement
 
 const removeTodolist = function* (id,user_id){
   yield Todolist.destroy({
@@ -1541,7 +1541,7 @@ module.exports = {
 
 // server/controllers/todolist.js
 
-// ... 省略
+// ... abridgement
 
 const removeTodolist = function* (){
   const id = this.params.id;
@@ -1557,7 +1557,7 @@ const updateTodolist = function* (){
   const id = this.params.id;
   const user_id = this.params.userId;
   let status = this.params.status; 
-  status == '0' ? status = true : status =  false;// 状态反转（更新）
+  status == '0' ? status = true : status =  false;// State reversal (update)
 
   const result = yield todolist.updateTodolist(id,user_id,status);
 
@@ -1580,29 +1580,29 @@ module.exports = (router) => {
 
 ....
 
-<!-- 把完成和还原的方法替换成了update -->
+<!-- The completion and restoration of the method replaced by update -->
 <el-button size="small" type="primary" @click="update(index)">完成</el-button>
 ....
 <el-button size="small" type="primary" @click="update(index)">还原</el-button>
 ....
 <script>
-// ....省略
+// ....abridgement
   methods:{
-    // ... 省略
+    // ... abridgement
     update(index) {
       this.$http.put('/api/todolist/'+ this.id + '/' + this.list[index].id + '/' + this.list[index].status)
         .then((res) => {
           if(res.status == 200){
             this.$message({
               type: 'success',
-              message: '任务状态更新成功！'
+              message: 'Task status update success!'
             })
             this.getTodolist();
           }else{
-            this.$message.error('任务状态更新失败！')
+            this.$message.error('Task status update failed!')
           }
         }, (err) => {
-          this.$message.error('任务状态更新失败！')
+          this.$message.error('Task status update failed')
           console.log(err)
         })
     },
@@ -1612,14 +1612,14 @@ module.exports = (router) => {
           if(res.status == 200){
             this.$message({
               type: 'success',
-              message: '任务删除成功！'
+              message: 'Task deleted successfully!'
             })
             this.getTodolist();
           }else{
-            this.$message.error('任务删除失败！')
+            this.$message.error('Task delete failed!')
           }
         }, (err) => {
-          this.$message.error('任务删除失败！')
+          this.$message.error('Task delete failed!')
           console.log(err)
         })
     },
@@ -1629,70 +1629,70 @@ module.exports = (router) => {
 ....
 ```
 
-让我们来看看最后99%成品的效果吧：
+Let's take a look at the effect of the final 99% of the finished product:
 
-![Todolist](https://img.piegg.cn/vue-koa-demo/todolist-5.gif 'todolist')
+! [Todolist] (https://img.piegg.cn/vue-koa-demo/todolist-5.gif 'todolist')
 
-## 项目部署
+## project deployment
 
-很多教程到类似于我上面的部分就结束了。但是实际上我们做一个项目最想要的就是部署给大家用不是么？
+A lot of tutorials to the part similar to my above is over. But in fact we do a project most want to deploy to everyone is not it?
 
-在部署这块有些坑，需要让大家也一起知道一下。这个项目是个全栈项目（虽然是个很简单的。。。），所以就涉及到前后端通信的问题，也就会涉及到是同域请求还是跨域请求。
+In the deployment of some of this pit, we need to let everyone know together. This project is a full stack project (albeit a very simple one ...), so it involves the issue of front-end and back-end communications and also involves requests for domain or cross-domain.
 
-我们也说过，要解决这个问题有两种方便的解决办法，第一种，服务端加上`cors`，客户端就可以随意的跨域请求。但是这样会有个问题，因为我们是以同域的形式开发，请求的地址也是写的相对地址：`/api/*`、`auth/*`这样的路径，访问的路径的自然是同域。如果要在服务端加上`cors`，我们还需要将我们的所有请求地址改成`localhost:8889/api/*`，`localhost:8889/auth/*`，这样的话，如果服务端的端口号一变，我们还需要重新修改前端所有的请求地址。这样很不方便也很不科学。
+We also said that to solve this problem there are two convenient solutions, the first one, the server plus `cors`, the client can freely cross-domain request. But this will have a problem, because we are in the form of domain development, the address is also requested to write the relative address: `/ api / *`, `auth / *` this path to access the path is naturally the same domain . If we want to add `cors` on the server side, we also need to change all our request addresses to` localhost: 8889 / api / * `,` localhost: 8889 / auth / * `so that if the server's port number A change, we also need to re-modify the front all the request address. This is inconvenient and unscientific.
 
-因此，要将请求变为同域才是最好的解决办法——不管服务端端口号怎么变，只要是同域都可以请求到。
+Therefore, it is the best solution to change a request to the same domain - no matter how the service port number changes, so long as the same domain can request it.
 
-于是要把Vue和Koa结合起来变成一个完整的项目（之前实际上都是在开发模式下，webpack帮我们进行请求的代理转发，所以看起来像是同域请求，而Vue和Koa并没有完全结合起来），就得在生产模式下，将Vue的静态文件交给Koa“托管”，所有访问前端的请求全部走Koa端，包括静态文件资源的请求，也走Koa端，把Koa作为一个Vue项目的静态资源服务器，这样就可以让Vue里的请求走的都是同域了。（相当于，之前开发模式是webpack开启了一个服务器托管了Vue的资源和请求，现在生产模式下改成Koa托管Vue的资源和请求）
+So combining Vue and Koa into a complete project (before actually in development mode, webpack helped us make the requested proxy forwarding, so it looks like a domain request, and Vue and Koa are not exactly ), You have to leave the Vue static file under "production mode" with Koa "hosting". All requests for access to the front end take the Koa side, including requests for static file resources, Koa side and Koa as a Vue Project's static resource server so that the requests in Vue go in the same domain. (Equivalent to, before the development model is webpack opened a server hosting Vue resources and requests, now converted to Koa hosted Vue resources and requests)
 
-要在开发和生产模式改变不同的托管服务器，其实也很简单，只需要在生产模式下，用Koa的静态资源服务中间件托管构建好的Vue文件即可。
+In order to change the different hosting servers in the development and production mode, it is actually very simple. You only need to use the Koa static resource service middleware to host the constructed Vue files in the production mode.
 
-### Webpack打包
+### Webpack package
 
-部署之前我们要用Webpack将我们的前端项目打包输出一下。但是如果直接用`npm run build`，你会发现打包出来的文件太大了：
+Before deployment we use Webpack to package our front-end project output. However, if you use `npm run build` directly, you will find that the package size is too large:
 
-```bash
+`` `bash
 
-                                                  Asset       Size  Chunks             Chunk Names
-    static/css/app.d9034fc06fd57ce00d6e75ed49f0dafe.css     120 kB    2, 0  [emitted]  app
-                 static/fonts/element-icons.a61be9c.eot    13.5 kB          [emitted]
-                   static/img/element-icons.09162bc.svg    17.4 kB          [emitted]
-             static/js/manifest.8ea250834bdc80e4d73b.js  832 bytes       0  [emitted]  manifest
-               static/js/vendor.75bbe7ecea37b0d4c62d.js     623 kB    1, 0  [emitted]  vendor
-                  static/js/app.e2d125562bfc4c57f9cb.js    16.5 kB    2, 0  [emitted]  app
-                 static/fonts/element-icons.b02bdc1.ttf    13.2 kB          [emitted]
-         static/js/manifest.8ea250834bdc80e4d73b.js.map    8.86 kB       0  [emitted]  manifest
-           static/js/vendor.75bbe7ecea37b0d4c62d.js.map    3.94 MB    1, 0  [emitted]  vendor
-              static/js/app.e2d125562bfc4c57f9cb.js.map    64.8 kB    2, 0  [emitted]  app
-static/css/app.d9034fc06fd57ce00d6e75ed49f0dafe.css.map     151 kB    2, 0  [emitted]  app
-                                             index.html  563 bytes          [emitted]
-```
+                                                  Asset Size Chunks Chunk Names
+    static / css / app.d9034fc06fd57ce00d6e75ed49f0dafe.css 120 kB 2, 0 [emitted] app
+                 static / fonts / element-icons.a61be9c.eot 13.5 kB [emitted]
+                   static / img / element-icons.09162bc.svg 17.4 kB [emitted]
+             static / js / manifest.8ea250834bdc80e4d73b.js 832 bytes 0 [emitted] manifest
+               static / js / vendor.75bbe7ecea37b0d4c62d.js 623 kB 1, 0 [emitted] vendor
+                  static / js / app.e2d125562bfc4c57f9cb.js 16.5 kB 2, 0 [emitted] app
+                 static / fonts / element-icons.b02bdc1.ttf 13.2 kB [emitted]
+         static / js / manifest.8ea250834bdc80e4d73b.js.map 8.86 kB 0 [emitted] manifest
+           static / js / vendor.75bbe7ecea37b0d4c62d.js.map 3.94 MB 1, 0 [emitted] vendor
+              static / js / app.e2d125562bfc4c57f9cb.js.map 64.8 kB 2, 0 [emitted] app
+static / css / app.d9034fc06fd57ce00d6e75ed49f0dafe.css.map 151 kB 2, 0 [emitted] app
+                                             index.html 563 bytes [emitted]
+`` `
 
-竟然有3.94MB的map文件。这肯定是不能接受的。于是要修改一下webpack的输出的设置，取消输出map文件。
+There are actually 3.94MB map file. This is certainly unacceptable. So to modify the webpack output settings, cancel the output map file.
 
-找到根目录下的`config/index.js`：把`productionSourceMap: true`这句话改成`productionSourceMap: false`。然后再执行一遍`npm run build`。
+Find the `config / index.js` in the root directory: change` productionSourceMap: true` to `productionSourceMap: false`. Then run `npm run build` again.
 
-```bash
-                                              Asset       Size  Chunks             Chunk Names
-             static/fonts/element-icons.a61be9c.eot    13.5 kB          [emitted]
-             static/fonts/element-icons.b02bdc1.ttf    13.2 kB          [emitted]
-               static/img/element-icons.09162bc.svg    17.4 kB          [emitted]
-         static/js/manifest.3ba218c80028a707a728.js  774 bytes       0  [emitted]  manifest
-           static/js/vendor.75bbe7ecea37b0d4c62d.js     623 kB    1, 0  [emitted]  vendor
-              static/js/app.b6acaca2531fc0baa447.js    16.5 kB    2, 0  [emitted]  app
-static/css/app.d9034fc06fd57ce00d6e75ed49f0dafe.css     120 kB    2, 0  [emitted]  app
-                                         index.html  563 bytes          [emitted]
-```
+`` `bash
+                                              Asset Size Chunks Chunk Names
+             static / fonts / element-icons.a61be9c.eot 13.5 kB [emitted]
+             static / fonts / element-icons.b02bdc1.ttf 13.2 kB [emitted]
+               static / img / element-icons.09162bc.svg 17.4 kB [emitted]
+         static / js / manifest.3ba218c80028a707a728.js 774 bytes 0 [emitted] manifest
+           static / js / vendor.75bbe7ecea37b0d4c62d.js 623 kB 1, 0 [emitted] vendor
+              static / js / app.b6acaca2531fc0baa447.js 16.5 kB 2, 0 [emitted] app
+static / css / app.d9034fc06fd57ce00d6e75ed49f0dafe.css 120 kB 2, 0 [emitted] app
+                                         index.html 563 bytes [emitted]
+`` `
 
-把sourceMap去掉了之后，体积就小下来了。虽然600+kb的大小还是有点大，不过放到服务端，gzip之后只剩150+kb的体积勉强还是可以接受。当然，对于webpack输出的优化，不是本文讨论的范围，有很多更好的文章讲述了这个东西，故本文不再详细展开。
+Remove the sourceMap, the size of the small down. Although the size of 600 + kb is still a bit big, but on the server, gzip only 150 + kb size barely acceptable. Of course, the optimization of webpack output, not the scope of this article, there are many better articles about this thing, so this article will not be expanded in detail.
 
-打包好后就是相当于输出了一堆静态文件，当然这堆静态文件需要放在服务端才可以访问。我们要将这堆静态资源用Koa托管。
+After the package is equivalent to the output of a pile of static files, of course, this pile of static files need to be on the server before they can access. We are going to have this heap of static resources hosted by Koa.
 
-### Koa serve静态资源
+### Koa serve static resource
 
 `yarn add koa-static`
 
-打开`app.js`，引入两个新依赖，其中`path`是nodejs原生自带。
+Open `app.js` and introduce two new dependencies, where` path` is native to nodejs.
 
 ```js
 // app.js
@@ -1702,29 +1702,29 @@ const path =require('path')
     , serve = require('koa-static');
 // ....
 
-// 静态文件serve在koa-router的其他规则之上 
-app.use(serve(path.resolve('dist'))); // 将webpack打包好的项目目录作为Koa静态文件服务的目录
+// The static file serves on top of the other rules of koa-router
+app.use(serve(path.resolve('dist'))); // The webpack packaged project directory as the Koa static file service directory
 
-// 下面这些是之前就有的。。。为了方便找位置故标示出来
+// The following are some of the previous. . . For convenience to find the location marked out
 koa.use('/auth', auth.routes());
 koa.use("/api",jwt({secret: 'vue-koa-demo'}),api.routes()) 
 
 // ...
 ```
 
-然后重新运行一遍`node app.js`，看到输出`Koa is listening in 8889`后，你可以打开浏览器`localhost:8889`就可以看到如下情景：
+Then run `node.js` again, and after seeing` Koa is listening in 8889`, you can open the browser `localhost: 8889` to see the following scenario:
 
-![vue-koa](https://img.piegg.cn/vue-koa-demo/vue-koa.png)
+! [vue-koa] (https://img.piegg.cn/vue-koa-demo/vue-koa.png)
 
-至此已经基本上接近尾声，不过还存在一个问题：如果我们登录进去之后，在todolist页面一刷新，就会出现：
+This has almost come to an end, but there is a problem: if we log in after todolist page refresh, there will be:
 
-![404](https://img.piegg.cn/vue-koa-demo/404.png '404')
+! [404] (https://img.piegg.cn/vue-koa-demo/404.png '404')
 
-为什么会出现这种情况？简单来说是因为我们使用了前端路由，用了HTML5 的History模式，如果没有做其他任何配置的话，刷新页面，那么浏览器将会去服务端访问这个页面地址，因为服务端并没有配置这个地址的路由，所以自然就返回404 Not Found了。
+Why does this happen? Simply because we use the front-end routing, using HTML5 History mode, if you do not do any other configuration, refresh the page, then the browser will go to the server to access the page address, because the server does not configure the address Of the route, so naturally 404 Not Found back.
 
-详细可以参考vue-router的[这篇文档](https://router.vuejs.org/zh-cn/essentials/history-mode.html)
+Details can refer to vue-router [this document] (https://router.vuejs.org/zh-cn/essentials/history-mode.html)
 
-该怎么解决？其实也很简单，多加一个中间件：`koa-history-api-fallback`即可.
+How to solve? In fact, it is also very simple, add a middleware: `koa-history-api-fallback` can be.
 
 `yarn add koa-history-api-fallback`
 
@@ -1732,23 +1732,23 @@ koa.use("/api",jwt({secret: 'vue-koa-demo'}),api.routes())
 
 //... 省略
 
-const historyApiFallback = require('koa-history-api-fallback'); // 引入依赖
+const historyApiFallback = require('koa-history-api-fallback'); // Introduce dependencies
 
 app.use(require('koa-bodyparser')());
 app.use(json());
 app.use(logger());
-app.use(historyApiFallback()); // 在这个地方加入。一定要加在静态文件的serve之前，否则会失效。
+app.use(historyApiFallback()); // Join in this place. Must be added to the static file serve before, otherwise it will lapse.
 
 // ... 
 ```
 
-这个时候，你再重新启动一下koa，登录之后再刷新页面，就不会再出现404 Not Found了。
+This time, you restart koa, log in and then refresh the page, will not appear again 404 Not Found.
 
 ### API Test
 
-本来写到上面基本本文已经算是结束了。但是由于我在开发的过程中遇到了一些问题，所以还需要做一些微调。
+Originally wrote above the basic article is over. However, since I encountered some problems in the development process, so there are some fine-tuning needs to be done.
 
-我们知道koa的use方法是有顺序只差的。
+We know koa's use method is only orderly difference.
 
 ```js
 const app = require('koa');
@@ -1762,36 +1762,36 @@ app.use(B);
 app.use(A);
 ```
 
-这二者是有区别的，谁先被use，谁的规则就放到前面先执行。
+There is a difference between the two, who is the first to use, who put the rules before the implementation of the first.
 
-因此如果我们将静态文件的serve以及`historyApiFallback`放在了api的请求之前，那么用postman测试api的时候总会先返回完整的页面：
+So if we put the static file serve and `historyApiFallback` before the api's request, then using postman to test the API always returns the full page first:
 
-![postman](https://img.piegg.cn/vue-koa-demo/postman.png)
+! [postman] (https://img.piegg.cn/vue-koa-demo/postman.png)
 
-因此正确的做法，应该是将它们放到我们写的api的规则之后：
+So the right approach should be to put them behind the rules of the API we wrote:
 
 ```js
 
 // app.js
 // ...
 
-koa.use('/auth', auth.routes()); // 挂载到koa-router上，同时会让所有的auth的请求路径前面加上'/auth'的请求路径。
-koa.use("/api",jwt({secret: 'vue-koa-demo'}),api.routes()) // 所有走/api/打头的请求都需要经过jwt验证。
+koa.use('/auth', auth.routes()); // Mount to koa-router, at the same time will make all auth request path in front of the request path '/ auth'.
+koa.use("/api",jwt({secret: 'vue-koa-demo'}),api.routes()) // All / api / header requests need to be jwt verified.
 
-app.use(koa.routes()); // 将路由规则挂载到Koa上。
+app.use(koa.routes()); // Mount routing rules to Koa.
 
-app.use(historyApiFallback()); // 将这两个中间件挂载在api的路由之后
-app.use(serve(path.resolve('dist'))); // 将webpack打包好的项目目录作为Koa静态文件服务的目录
+app.use(historyApiFallback()); // Mount these two middleware behind the api's route
+app.use(serve(path.resolve('dist'))); // The webpack packaged project directory as the Koa static file service directory
 
 ```
 
-这样就能正常返回数据了。
+This will return the data normally.
 
-### Nginx配置
+### Nginx configuration
 
-真正部署到服务器的时候，我们肯定不会让大家输入`域名:8889`这样的方式让大家访问。所以需要用Nginx监听80端口，把访问我们指定域名的请求引导转发给Koa服务端。
+When really deployed to the server, we certainly will not let you enter `domain name: 8889` this way for everyone to visit. So I need to use Nginx to listen on port 80 and forward the request to our Koa server for access to our assigned domain name.
 
-大致的`nginx.conf`如下：
+The general `nginx.conf` is as follows:
 
 ```nginx
 http {
@@ -1816,28 +1816,28 @@ http {
 }
 ```
 
-如果有精力还可以配置一下Nginx的Gzip，能让请求的JS\CSS\HTML等静态文件更小，响应速度更快些。
+If you have energy you can configure Nginx's Gzip to make requesting static files such as JS \ CSS \ HTML smaller and faster.
 
-## 写在最后
+## written in the last
 
-至此，我们已经完成了一个从前端到后端，从本地到服务器的完整项目。虽然它真的是个很简单的小东西，被大家也已经用其他的方式写烂了（比如用localStorage做存储）。但是它作为一个完整的前后端的DEMO，我觉得让大家入门也相对更容易一些，能够体会到全栈开发也不是想象中的“那么难”（入门的难度还是可以接受的嘛）。有了Nodejs之后我们能够做的事真的好多！
+So far, we have completed a complete project from the front-end to the back-end, from local to server. Although it is really a very simple little thing, it has been written in other ways (for example, using localStorage for storage). But as a complete front-end and back-end DEMO, I think it is relatively easier for everyone to start, you can appreciate the full stack development is not the "so difficult" (the difficulty of getting started or acceptable thing). With Nodejs we can do a lot better!
 
-当然，由于篇幅有限，本文能够讲述东西毕竟不够多，而且讲的东西也不可能面面俱到，很多东西都是点到即止，让大家能够自己发挥。其实还想讲讲`Event Bus`的简单使用，还有分页的基本实现等等，东西太多了，一时间大家消化不了。
+Of course, because of the limited space, this article can tell you that after all, not enough things are involved, and that things can not be exhaustive. Many things are over and you can play for yourself. In fact, want to talk about the simple use of `Event Bus`, as well as the basic realization of paging, etc., too many things for a time we can not digest.
 
-实际上我在做前段时间的项目的时候，也是完全不知道怎么把Vue和Koa结合起来开发。我甚至不知道怎么用Koa来提供API，我只会用Koa来做服务端渲染，比如那些JADE\EJS等模板引擎渲染的页面。所以之前那个项目做完让我自己学到良多东西，故而也分享给大家。
+In fact, I did some time ago projects, but also do not know how to combine Vue and Koa development. I do not even know how to use APIs for Koa. I only use Koa for server-side rendering, such as those rendered by template engines like JADE \ EJS. So before that project finished let me learn a lot of things, so I also share for everyone.
 
-实际上本文的Koa的api提供的形式也尽量和RESTful靠拢了，因此你也可以学会如何通过Koa提供RESTful形式的API了。
+In fact, the Koa API provided in this article also tries to be as close as possible to RESTful, so you can learn how to provide a RESTful API via Koa.
 
-最后放上本文项目的Github[地址](https://github.com/Molunerfinn/vue-koa-demo)，如果这个项目对你有帮助，希望大家可以fork，给我提建议，如果再有时间，可以点个Star那就更好啦~
+Finally put this project Github [address] (https://github.com/Molunerfinn/vue-koa-demo), if this project is helpful to you, I hope you can fork, give me suggestions, if there is time , You can point a Star that's better ~
 
-另外，本文的版本是用Koa1写成的。仓库已经更新Koa2。从Koa1->Koa2并没有什么难度，其实很关键的两点是：
+In addition, the version of this article is written in Koa1. Warehouse has been updated Koa2. From Koa1 -> Koa2 there is no difficulty, in fact, two key points are:
 
-1. 用`async await`替代`yield generation`
-2. 用`koa2`的中间件替代`koa1`的中间件，原因同上一条
+Replace `yield generation` with` async await`
+2. Use `koa2` middleware` koa1` middleware replacement, for the same reason
 
-互相学习，如果能从这个项目里学到东西我就很开心啦~
+Learn from each other, if I can learn something from this project I am very happy ~
 
-> 注： 转载需经过同意，必须署名
+> Note: Reprinted subject to consent, must be signed
 
 
 
