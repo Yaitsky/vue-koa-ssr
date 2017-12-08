@@ -1,32 +1,55 @@
 import './env'
 import Koa from 'koa'
-import json from 'koa-json'
-import logger from 'koa-logger'
-import test from './server/routes/test.js'
 import path from 'path'
 import fs from 'fs'
 import serve from 'koa-static'
-import koaRouter from 'koa-router'
-import koaBodyparser from 'koa-bodyparser'
+import Router from 'koa-router'
 import { createBundleRenderer } from 'vue-server-renderer'
-import favicon from 'koa-favicon'
 
-const isProd = process.env.NODE_ENV === 'production'
+// import route modules
+import test from './server/routes/test.js'
+
 const app = new Koa()
-const router = koaRouter()
+const router = Router()
+const isProd = process.env.NODE_ENV === 'production'
+const port = process.env.PORT || 8889
 const resolve = file => path.resolve(__dirname, file)
+const templatePath = resolve('./index.html')
+const middlewares = fs.readdirSync(path.join(__dirname, './server/middlewares')).sort()
+let renderer
 
-function createRenderer (bundle, options) {
+// SSR render functions
+const createRenderer = (bundle, options) => {
   return createBundleRenderer(bundle, Object.assign(options, {
     runInNewContext: false
   }))
 }
-
-let renderer
-const templatePath = resolve('./index.html')
-
-let port = process.env.PORT || 8889
-
+const renderToStringPromise = (context, s) => {
+  return new Promise((resolve, reject) => {
+    renderer.renderToString(context, (err, html) => {
+      if (err) {
+        reject(err)
+      }
+      if (!isProd) {
+        console.log(`Render template in ${Date.now() - s}ms`)
+      }
+      resolve(html)
+    })
+  })
+}
+const render = async (ctx, next) => {
+  if (!renderer) {
+    ctx.body = 'waiting for compilation... refresh in a moment.'
+    return ctx.body
+  } else {
+    let req = ctx.req
+    ctx.type = 'html'
+    const s = Date.now()
+    let context = { url: req.url }
+    ctx.body = await renderToStringPromise(context, s)
+    return ctx.body
+  }
+}
 if (isProd) {
   const template = fs.readFileSync(templatePath, 'utf-8')
   const bundle = require('./dist/vue-ssr-server-bundle.json')
@@ -44,81 +67,17 @@ if (isProd) {
   })
 }
 
-app.use(koaBodyparser())
-app.use(json())
-app.use(logger())
-app.use(favicon(path.resolve(__dirname, 'src/assets/logo.png')))
+// middlewares
+middlewares.forEach(middleware => app.use(require('./server/middlewares/' + middleware)))
 
-app.use(async function (ctx, next) {
-  let start = new Date()
-  await next()
-  let ms = new Date() - start
-  console.log('%s %s - %s', ctx.method, ctx.url, ms, 'hello')
-})
-
-app.use(async function (ctx, next) {
-  try {
-    await next()
-  } catch (err) {
-    if (err.status === 401) {
-      ctx.status = 401
-      ctx.body = {
-        success: false,
-        token: null,
-        info: 'Protected resource, use Authorization header to get access'
-      }
-    } else if (err.status === 404) {
-      ctx.status = 404
-      ctx.body = { message: 'Not found' }
-    } else {
-      console.log('No handled server error ', err)
-      throw err
-    }
-  }
-})
-
-app.on('error', function (err, ctx) {
-  console.log('server error', err)
-})
-
+// routes
 router.use('/test', test.routes())
+router.get('*', async (ctx, next) => render(ctx, next))
 
 app.use(router.routes())
-
-router.get('*', async (ctx, next) => {
-  return render(ctx, next)
-})
-
-const render = async (ctx, next) => {
-  if (!renderer) {
-    ctx.body = 'waiting for compilation... refresh in a moment.'
-    return ctx.body
-  } else {
-    let req = ctx.req
-    ctx.type = 'html'
-    const s = Date.now()
-    let context = { url: req.url }
-    ctx.body = await renderToStringPromise(context, s)
-    return ctx.body
-  }
-}
-
-function renderToStringPromise (context, s) {
-  return new Promise((resolve, reject) => {
-    renderer.renderToString(context, (err, html) => {
-      if (err) {
-        reject(err)
-      }
-      if (!isProd) {
-        console.log(`whole request: ${Date.now() - s}ms`)
-      }
-      resolve(html)
-    })
-  })
-}
-
-app.use(router.routes()) // Mount routing rules to Koa.
 app.use(router.allowedMethods())
+
+app.on('error', (err, ctx) => console.log('server error', err))
 
 export default app.listen(port, () => {
   console.log(`Koa is listening in ${port}`)
