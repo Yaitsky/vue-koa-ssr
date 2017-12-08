@@ -31,15 +31,11 @@ Beacuse of using Koa2, `Node.js >= v7.6.0` is needed.
 
 open browser: `localhost:8889`
 
-> tips: login password is 123
-
 #### Production:
 
 `npm run build` and then `npm run start`
 
 open browser: `localhost:8889`
-
-> tips: login password is 123
 
 #### Test:
 
