@@ -2,9 +2,7 @@ import './env'
 import Koa from 'koa'
 import json from 'koa-json'
 import logger from 'koa-logger'
-import auth from './server/routes/auth.js'
-import api from './server/routes/api.js'
-import jwt from 'koa-jwt'
+import test from './server/routes/test.js'
 import path from 'path'
 import fs from 'fs'
 import serve from 'koa-static'
@@ -58,7 +56,7 @@ app.use(async function (ctx, next) {
   console.log('%s %s - %s', ctx.method, ctx.url, ms, 'hello')
 })
 
-app.use(async function (ctx, next) {  // If JWT validation fails, validation failure information is returned
+app.use(async function (ctx, next) {
   try {
     await next()
   } catch (err) {
@@ -69,7 +67,11 @@ app.use(async function (ctx, next) {  // If JWT validation fails, validation fai
         token: null,
         info: 'Protected resource, use Authorization header to get access'
       }
+    } else if (err.status === 404) {
+      ctx.status = 404
+      ctx.body = { message: 'Not found' }
     } else {
+      console.log('No handled server error ', err)
       throw err
     }
   }
@@ -79,12 +81,9 @@ app.on('error', function (err, ctx) {
   console.log('server error', err)
 })
 
-router.use('/auth', auth.routes()) // Mount to koa-router, at the same time will make all auth request path in front of the request path '/ auth'.
-router.use('/api', jwt({secret: 'vue-koa-demo'}), api.routes()) // All / api / header requests need to be jwt verified.
+router.use('/test', test.routes())
 
-app.use(router.routes()) // Mount routing rules to Koa.
-// app.use(historyApiFallback())
-// app.use(serve(path.resolve('dist'))) // The webpack packaged project directory as the Koa static file service directory
+app.use(router.routes())
 
 router.get('*', async (ctx, next) => {
   return render(ctx, next)
@@ -108,7 +107,7 @@ function renderToStringPromise (context, s) {
   return new Promise((resolve, reject) => {
     renderer.renderToString(context, (err, html) => {
       if (err) {
-        console.log(err)
+        reject(err)
       }
       if (!isProd) {
         console.log(`whole request: ${Date.now() - s}ms`)

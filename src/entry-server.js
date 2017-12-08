@@ -6,7 +6,9 @@ export default context => {
     router.onReady(() => {
       const matchedComponents = router.getMatchedComponents()
       if (!matchedComponents.length) {
-        return reject(new Error({code: 404}))
+        const error = new Error('Not found route')
+        error.status = 404
+        return reject(error)
       }
       resolve(app)
     }, reject)

@@ -1,8 +1,8 @@
 {
-  "name": "vue-koa-demo",
+  "name": "vuetify-koa-ssr",
   "version": "1.0.0",
-  "description": "A Vue.js & Koa project",
-  "author": "Molunerfinn <marksz@teamsz.xyz>",
+  "description": "A Vue.js & Vuetify.js & Koa SSR project",
+  "author": "Igor Yaitsky <yaickiu@gmail.com>",
   "private": true,
   "scripts": {
     "build:client": "cross-env NODE_ENV=production webpack --config build/webpack.client.config.js --progress --hide-modules",
@@ -16,7 +16,6 @@
   "dependencies": {
     "axios": "^0.15.3",
     "bcryptjs": "^2.4.0",
-    "element-ui": "^1.2.9",
     "koa": "^2.2.0",
     "koa-bodyparser": "^4.2.0",
     "koa-favicon": "^2.0.0",
@@ -27,14 +26,18 @@
     "koa-static": "^3.0.0",
     "koa2-history-api-fallback": "^0.0.2",
     "mysql": "^2.12.0",
+    "node-sass": "^4.7.2",
+    "sass-loader": "^6.0.6",
     "sequelize": "^3.29.0",
-    "stylus": "^0.54.5",
-    "stylus-loader": "^2.4.0",
     "supertest": "^3.0.0",
     "vue": "^2.5.9",
+    "vue-axios": "^2.0.2",
     "vue-jest": "^1.0.3",
-    "vue-router": "^2.3.1",
-    "vue-server-renderer": "^2.5.9"
+    "vue-router": "^3.0.1",
+    "vue-server-renderer": "^2.5.9",
+    "vuetify": "^1.0.0-alpha.2",
+    "vuex": "^3.0.1",
+    "vuex-router-sync": "^5.0.0"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",
