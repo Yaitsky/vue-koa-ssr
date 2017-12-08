@@ -1,4 +1,4 @@
-import { testData } from '../controllers/test.js'
+import { testData } from '../controllers/get-data'
 import koaRouter from 'koa-router'
 const router = koaRouter()
 

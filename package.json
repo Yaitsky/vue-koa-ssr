@@ -25,10 +25,10 @@
     "koa-router": "^7.1.1",
     "koa-static": "^3.0.0",
     "koa2-history-api-fallback": "^0.0.2",
-    "mysql": "^2.12.0",
+    "mongoose": "^4.13.6",
+    "mongoose-beautiful-unique-validation": "^7.0.0",
     "node-sass": "^4.7.2",
     "sass-loader": "^6.0.6",
-    "sequelize": "^3.29.0",
     "supertest": "^3.0.0",
     "vue": "^2.5.9",
     "vue-axios": "^2.0.2",
@@ -99,34 +99,5 @@
   "engines": {
     "node": ">= 4.0.0",
     "npm": ">= 3.0.0"
-  },
-  "jest": {
-    "verbose": true,
-    "moduleFileExtensions": [
-      "js"
-    ],
-    "transform": {
-      ".*\\.(vue)$": "<rootDir>/node_modules/vue-jest",
-      "^.+\\.js$": "<rootDir>/node_modules/babel-jest"
-    },
-    "coverageDirectory": "coverage",
-    "mapCoverage": true,
-    "collectCoverage": true,
-    "coverageReporters": [
-      "lcov",
-      "text"
-    ],
-    "moduleNameMapper": {
-      "@/(.*)$": "<rootDir>/src/$1"
-    },
-    "snapshotSerializers": [
-      "<rootDir>/node_modules/jest-serializer-vue"
-    ],
-    "setupTestFrameworkScriptFile": "mock-local-storage",
-    "collectCoverageFrom": [
-      "!env.js",
-      "server/**/*.js",
-      "app.js"
-    ]
   }
 }

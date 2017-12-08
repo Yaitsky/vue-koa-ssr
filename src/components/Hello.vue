@@ -17,15 +17,15 @@
       <li><a href="http://vue-loader.vuejs.org/" target="_blank">vue-loader</a></li>
       <li><a href="https://github.com/vuejs/awesome-vue" target="_blank">awesome-vue</a></li>
       <br>
-      <div class="test-block">
-        <v-btn color="success" class="test-block__btn" @click="changeData">Поменять данные</v-btn>
-        <v-btn color="primary" class="test-block__btn" @click="getData">Получить данные</v-btn>
-        <v-btn color="error" class="test-block__btn" @click="getError">Получить ошибку 404</v-btn>
-        <div>{{ testData }}</div>
-        <div>Изменение в store.state - {{ testBoolean ? 'Да' : 'Нет' }}</div>
-        <div>Получение с сервера в store.state - {{ apiData }}</div>
-      </div>
     </ul>
+  <div class="test-block">
+    <v-btn color="success" class="test-block__btn" @click="changeData">Поменять данные</v-btn>
+    <v-btn color="primary" class="test-block__btn" @click="getData">Получить данные</v-btn>
+    <v-btn color="error" class="test-block__btn" @click="getError">Получить ошибку 404</v-btn>
+    <div>{{ testData }}</div>
+    <div>Изменение в store.state - {{ testBoolean ? 'Да' : 'Нет' }}</div>
+    <div>Получение с сервера в store.state - {{ apiData }}</div>
+  </div>
   </div>
 </template>
 

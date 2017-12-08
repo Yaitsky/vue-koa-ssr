@@ -5,9 +5,10 @@ import fs from 'fs'
 import serve from 'koa-static'
 import Router from 'koa-router'
 import { createBundleRenderer } from 'vue-server-renderer'
+import './server/libs/mongoose'
 
 // import route modules
-import test from './server/routes/test.js'
+import test from './server/routes/get-data'
 
 const app = new Koa()
 const router = Router()
